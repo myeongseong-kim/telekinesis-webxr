@@ -12,14 +12,6 @@ export class UniManualMode extends Mode {
   enter() {
     super.enter();
 
-    if (!this.context.targetEntity) return;
-
-    const handedness = this.handEntity.components['hand-tracking-controls'].data.hand;
-    if (handedness == 'left') {
-      this.context.targetEntity.setAttribute('color', '#0000FF');
-    } else if (handedness == 'right') {
-      this.context.targetEntity.setAttribute('color', '#FF0000');
-    }
     this.context.planeEntity.setAttribute('visible', 'true');
 
     this.updatePlaneTransform();
