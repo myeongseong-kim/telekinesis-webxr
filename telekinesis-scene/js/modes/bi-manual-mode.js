@@ -18,7 +18,51 @@ export class BiManualMode extends Mode {
   execute() {
     super.execute();
 
+    const planeObj = this.context.planeEntity.object3D;
+    const targetObj = this.context.targetEntity.object3D;
+    var prePlaneWorldPos = new THREE.Vector3();
+    var prePlnaeWorldRot = new THREE.Quaternion();
+
+    planeObj.getWorldPosition(prePlaneWorldPos);
+    planeObj.getWorldQuaternion(prePlnaeWorldRot);
+
     this.updatePlaneTransform();
+
+    var curPlaneWorldPos = new THREE.Vector3();
+    var curPlaneWorldRot = new THREE.Quaternion();
+    planeObj.getWorldPosition(curPlaneWorldPos);
+    planeObj.getWorldQuaternion(curPlaneWorldRot);
+
+    var deltaPos = new THREE.Vector3().subVectors(curPlaneWorldPos, prePlaneWorldPos);
+    var deltaRot = new THREE.Quaternion().multiplyQuaternions(curPlaneWorldRot, prePlnaeWorldRot.clone().invert());
+
+    var targetWorldPos = new THREE.Vector3();
+    var targetWorldRot = new THREE.Quaternion();
+    targetObj.getWorldPosition(targetWorldPos);
+    targetObj.getWorldQuaternion(targetWorldRot);
+
+    var newTargetWorldPos = new THREE.Vector3().addVectors(targetWorldPos, deltaPos);
+    var newTargetWorldRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetWorldRot);
+    var newTargetWorldTransform = new THREE.Matrix4().compose(
+      newTargetWorldPos,
+      newTargetWorldRot,
+      new THREE.Vector3(1, 1, 1)
+    );
+
+    var newTargetLocalPos = new THREE.Vector3();
+    var newTargetLocalRot = new THREE.Quaternion();
+    var newTargetLocalTransform = newTargetWorldTransform.clone();
+    if (targetObj.parent) {
+      targetObj.parent.updateMatrixWorld(true);
+      var inverseParentTransform = targetObj.parent.matrixWorld.clone().invert();
+      newTargetLocalTransform.premultiply(inverseParentTransform);
+    }
+    var tempLocalScl = new THREE.Vector3();
+    newTargetLocalTransform.decompose(newTargetLocalPos, newTargetLocalRot, tempLocalScl);
+
+    targetObj.position.copy(newTargetLocalPos);
+    targetObj.quaternion.copy(newTargetLocalRot);
+    targetObj.updateMatrixWorld(true);
   }
 
   exit() {
