@@ -3,14 +3,17 @@ import { ModeManager } from './mode-manager.js';
 AFRAME.registerComponent('manipulator', {
   schema: {
     target: { type: 'selector' },
+    plane: { type: 'selector', default: '#manipulationPlane' },
   },
 
   init: function () {
     this.modeManager = new ModeManager(this);
 
-    this.targetEntity = this.data.target;
     this.leftHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: left"]');
     this.rightHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: right"]');
+
+    this.targetEntity = this.data.target;
+    this.planeEntity = this.data.plane;
 
     this.pinchStartHandler = this.onPinchStart.bind(this);
     this.pinchMoveHandler = this.onPinchMove.bind(this);

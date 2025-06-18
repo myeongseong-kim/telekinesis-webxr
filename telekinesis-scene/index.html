@@ -27,7 +27,13 @@
       <a-entity hand-tracking-controls="hand: left"></a-entity>
       <a-entity hand-tracking-controls="hand: right"></a-entity>
 
-      <a-entity manipulator="target: #targetBox"></a-entity> 
+      <a-entity manipulator="target: #targetBox">
+        <a-entity  id="manipulationPlane" position="0 0 0" rotation="0 0 0" visible="false">
+          <a-plane width="0.1" height="0.1" position="0 0 0" rotation="-90 0 0"
+                   material="side: double; color: #000000; transparent: true; opacity: 0.5;"
+                   ></a-plane>
+        </a-entity>
+      </a-entity> 
     </a-scene>
   </body>
 </html>
