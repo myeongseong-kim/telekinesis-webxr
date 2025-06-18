@@ -10,9 +10,6 @@ export class BiManualMode extends Mode {
   enter() {
     super.enter();
 
-    if (!this.context.targetEntity) return;
-
-    this.context.targetEntity.setAttribute('color', '#FF00FF');
     this.context.planeEntity.setAttribute('visible', 'true');
 
     this.updatePlaneTransform();

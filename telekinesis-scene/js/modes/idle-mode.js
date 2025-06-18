@@ -7,10 +7,6 @@ export class IdleMode extends Mode {
 
   enter() {
     super.enter();
-
-    if (!this.context.targetEntity) return;
-
-    this.context.targetEntity.setAttribute('color', '#FFFFFF');
   }
 
   execute() {
