@@ -20,12 +20,20 @@ export class UniManualMode extends Mode {
     else if (handedness == 'right') {
       this.context.targetEntity.setAttribute('color', '#FF0000');
     }
+    this.context.planeEntity.setAttribute('visible', 'true');
+    this.updatePlaneTransform();
   }
   execute() {
     super.execute();
+
+    this.updatePlaneTransform();
   }
   exit() {
     super.exit();
+
+    this.context.planeEntity.setAttribute('visible', 'false');
+    this.initPlaneTransform();
+
     this.handEntity = null;
   }
 
@@ -59,5 +67,49 @@ export class UniManualMode extends Mode {
     
     var toMode = this.context.modeManager.modes['Idle'];
     this.context.modeManager.transitTo(toMode);
+  }
+
+
+  updatePlaneTransform() {
+    var handData = this.handEntity.components['hand-tracking-controls'];
+    var handedness = handData.data.hand;
+
+    var pinchPos = new THREE.Vector3().copy(handData.pinchEventDetail.position);
+    var pinchRot = new THREE.Quaternion().copy(handData.pinchEventDetail.wristRotation);
+
+    var pinchUp = new THREE.Vector3();
+    var pinchRight = new THREE.Vector3();
+    var pinchForward = new THREE.Vector3();
+
+    var pinchRotationMatrix = new THREE.Matrix4();
+    pinchRotationMatrix.makeRotationFromQuaternion(pinchRot)
+    pinchRotationMatrix.extractBasis(pinchRight, pinchUp, pinchForward);
+
+    var planeForward = pinchForward.clone();
+    var planeUp;
+    if (handedness == 'left') {
+        planeUp = pinchRight.clone();
+    } else {
+        planeUp = pinchRight.clone().negate();
+    }
+    var planeRight = new THREE.Vector3().crossVectors(planeUp, planeForward);
+
+    var planeRotationMatrix = new THREE.Matrix4();
+    planeRotationMatrix.makeBasis(planeRight, planeUp, planeForward);
+
+    var planePos = pinchPos.clone();
+    var planeRot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
+
+    const planeObj = this.context.planeEntity.object3D;
+    planeObj.position.copy(planePos);
+    planeObj.quaternion.copy(planeRot);
+    planeObj.updateMatrixWorld(true);
+  }
+
+  initPlaneTransform() {
+    const planeObj = this.context.planeEntity.object3D;
+    planeObj.position.set(0, 0, 0);
+    planeObj.rotation.set(0, 0, 0);
+    planeObj.updateMatrixWorld(true);
   }
 }
