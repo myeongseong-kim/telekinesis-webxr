@@ -6,6 +6,7 @@ import { BiManualMode } from './manipulator-modes/bi-manual-mode.js';
 AFRAME.registerComponent('manipulator', {
   schema: {
     target: { type: 'selector' },
+    plane: { type: 'selector', default: '#planeIndicator' },
   },
 
   init: function () {
@@ -15,9 +16,11 @@ AFRAME.registerComponent('manipulator', {
     this.modeManager.add(new BiManualMode(this));
     this.modeManager.initTo(this.modeManager.modes['Idle']);
 
-    this.targetEntity = this.data.target;
     this.leftHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: left"]');
     this.rightHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: right"]');
+
+    this.targetEntity = this.data.target;
+    this.planeEntity = this.data.plane;
 
     this.pinchStartHandler = this.onPinchStart.bind(this);
     this.pinchEndHandler = this.onPinchEnd.bind(this);
