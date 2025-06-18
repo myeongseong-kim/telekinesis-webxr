@@ -3,12 +3,13 @@
   "description": "Telekinesis Scene.",
   "version": "1.0.0",
   "license": "MIT",
+  "homepage": "https://myeongseong-kim.github.io/telekinesis-webxr",
   "scripts": {
     "start": "live-server --port=7000",
-    "deploy": "ghpages"
+    "deploy": "gh-pages -d ."
   },
   "devDependencies": {
-    "ghpages": "0.0.3",
+    "gh-pages": "^6.3.0",
     "live-server": "^1.2.0"
   },
   "keywords": [
