@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Telekinesis Scene</title>
+    <meta name="description" content="Telekinesis Scene">
+    <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script type="module" src="js/manipulator.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-assets>
+        <img id="groundTexture" src="https://cdn.aframe.io/a-painter/images/floor.jpg" crossorigin="anonymous">
+        <img id="skyTexture" src="https://cdn.aframe.io/a-painter/images/sky.jpg" crossorigin="anonymous">
+      </a-assets>
+
+      <!-- Primitives. -->
+      <a-box id="targetBox" position="0 0.5 -2" rotation="0 0 0" scale="0.5 0.5 0.5" color="#FFFFFF"></a-box>
+
+      <!-- Background sky. -->
+      <a-sky height="2048" radius="30" src="#skyTexture" theta-length="90" width="2048"></a-sky>
+
+      <!-- Ground. -->
+      <a-circle src="#groundTexture" rotation="-90 0 0" radius="32"></a-circle>
+
+      <!--Tracked controls. -->
+      <a-entity hand-tracking-controls="hand: left"></a-entity>
+      <a-entity hand-tracking-controls="hand: right"></a-entity>
+
+      <a-entity manipulator="target: #targetBox">
+        <a-entity  id="manipulationPlane" position="0 0 0" rotation="0 0 0" visible="false">
+          <a-plane width="0.1" height="0.1" position="0 0 0" rotation="-90 0 0"
+                   material="side: double; color: #000000; transparent: true; opacity: 0.5;"
+                   ></a-plane>
+        </a-entity>
+      </a-entity> 
+    </a-scene>
+  </body>
+</html>
