@@ -20,39 +20,39 @@ export class BiManualMode extends Mode {
     const planeObj = this.context.planeEntity.object3D;
     const targetObj = this.context.targetEntity.object3D;
     
-    var prePlaneWorldPos = new THREE.Vector3();
-    var prePlnaeWorldRot = new THREE.Quaternion();
+    let prePlaneWorldPos = new THREE.Vector3();
+    let prePlnaeWorldRot = new THREE.Quaternion();
     planeObj.getWorldPosition(prePlaneWorldPos);
     planeObj.getWorldQuaternion(prePlnaeWorldRot);
 
     this.updatePlaneTransform();
 
-    var curPlaneWorldPos = new THREE.Vector3();
-    var curPlaneWorldRot = new THREE.Quaternion();
+    let curPlaneWorldPos = new THREE.Vector3();
+    let curPlaneWorldRot = new THREE.Quaternion();
     planeObj.getWorldPosition(curPlaneWorldPos);
     planeObj.getWorldQuaternion(curPlaneWorldRot);
 
-    var deltaPos = new THREE.Vector3().subVectors(curPlaneWorldPos, prePlaneWorldPos);
-    var deltaRot = new THREE.Quaternion().multiplyQuaternions(curPlaneWorldRot, prePlnaeWorldRot.clone().invert());
+    let deltaPos = new THREE.Vector3().subVectors(curPlaneWorldPos, prePlaneWorldPos);
+    let deltaRot = new THREE.Quaternion().multiplyQuaternions(curPlaneWorldRot, prePlnaeWorldRot.clone().invert());
 
-    var targetWorldPos = new THREE.Vector3();
-    var targetWorldRot = new THREE.Quaternion();
+    let targetWorldPos = new THREE.Vector3();
+    let targetWorldRot = new THREE.Quaternion();
     targetObj.getWorldPosition(targetWorldPos);
     targetObj.getWorldQuaternion(targetWorldRot);
 
-    var newTargetWorldPos = new THREE.Vector3().addVectors(targetWorldPos, deltaPos);
-    var newTargetWorldRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetWorldRot);
-    var newTargetWorldTransform = new THREE.Matrix4().compose(newTargetWorldPos, newTargetWorldRot, new THREE.Vector3(1, 1, 1));
+    let newTargetWorldPos = new THREE.Vector3().addVectors(targetWorldPos, deltaPos);
+    let newTargetWorldRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetWorldRot);
+    let newTargetWorldTransform = new THREE.Matrix4().compose(newTargetWorldPos, newTargetWorldRot, new THREE.Vector3(1, 1, 1));
     
-    var newTargetLocalPos = new THREE.Vector3();
-    var newTargetLocalRot = new THREE.Quaternion();
+    let newTargetLocalPos = new THREE.Vector3();
+    let newTargetLocalRot = new THREE.Quaternion();
+    let newTargetLocalTransform = newTargetWorldTransform.clone();
     if (targetObj.parent) {
-      var newTargetLocalTransform = newTargetWorldTransform.clone();
       targetObj.parent.updateMatrixWorld(true);
-      var inverseParentTransform = targetObj.parent.matrixWorld.clone().invert();
+      let inverseParentTransform = targetObj.parent.matrixWorld.clone().invert();
       newTargetLocalTransform.premultiply(inverseParentTransform);
     }
-    var tempLocalScl = new THREE.Vector3();
+    let tempLocalScl = new THREE.Vector3();
     newTargetLocalTransform.decompose(newTargetLocalPos, newTargetLocalRot, tempLocalScl);
 
     targetObj.position.copy(newTargetLocalPos);
@@ -78,9 +78,9 @@ export class BiManualMode extends Mode {
   handlePinchEnd(handEntity) {
     super.handlePinchEnd(handEntity);
 
-    var toMode = this.context.modeManager.modes['UniManual'];
+    let toMode = this.context.modeManager.modes['UniManual'];
 
-    var handedness = handEntity.components['hand-tracking-controls'].data.hand;
+    const handedness = handEntity.components['hand-tracking-controls'].data.hand;
     if (handedness == 'left') {
         toMode.handEntity = this.rightHandEntity;
     }
@@ -96,42 +96,42 @@ export class BiManualMode extends Mode {
 
 
   updatePlaneTransform() {
-    var leftHandData = this.leftHandEntity.components['hand-tracking-controls'];
-    var rightHandData = this.rightHandEntity.components['hand-tracking-controls'];
+    const leftHandData = this.leftHandEntity.components['hand-tracking-controls'];
+    const rightHandData = this.rightHandEntity.components['hand-tracking-controls'];
 
-    var leftPinchPos = new THREE.Vector3().copy(leftHandData.pinchEventDetail.position);
-    var leftPinchRot = new THREE.Quaternion().copy(leftHandData.pinchEventDetail.wristRotation);
-    var rightPinchPos = new THREE.Vector3().copy(rightHandData.pinchEventDetail.position);
-    var rightPinchRot = new THREE.Quaternion().copy(rightHandData.pinchEventDetail.wristRotation);
+    let leftPinchPos = new THREE.Vector3().copy(leftHandData.pinchEventDetail.position);
+    let leftPinchRot = new THREE.Quaternion().copy(leftHandData.pinchEventDetail.wristRotation);
+    let rightPinchPos = new THREE.Vector3().copy(rightHandData.pinchEventDetail.position);
+    let rightPinchRot = new THREE.Quaternion().copy(rightHandData.pinchEventDetail.wristRotation);
 
-    var leftPinchRight = new THREE.Vector3();
-    var leftPinchUp = new THREE.Vector3();
-    var leftPinchForward = new THREE.Vector3();
-    var leftPinchRotationMatrix = new THREE.Matrix4();
+    let leftPinchRight = new THREE.Vector3();
+    let leftPinchUp = new THREE.Vector3();
+    let leftPinchForward = new THREE.Vector3();
+    let leftPinchRotationMatrix = new THREE.Matrix4();
     leftPinchRotationMatrix.makeRotationFromQuaternion(leftPinchRot)
     leftPinchRotationMatrix.extractBasis(leftPinchRight, leftPinchUp, leftPinchForward);
     
-    var rightPinchRight = new THREE.Vector3();
-    var rightPinchUp = new THREE.Vector3();
-    var rightPinchForward = new THREE.Vector3();
-    var rightPinchRotationMatrix = new THREE.Matrix4();
+    let rightPinchRight = new THREE.Vector3();
+    let rightPinchUp = new THREE.Vector3();
+    let rightPinchForward = new THREE.Vector3();
+    let rightPinchRotationMatrix = new THREE.Matrix4();
     rightPinchRotationMatrix.makeRotationFromQuaternion(rightPinchRot)
     rightPinchRotationMatrix.extractBasis(rightPinchRight, rightPinchUp, rightPinchForward);
 
-    var leftNormal = leftPinchRight.clone();
-    var rightNormal = rightPinchRight.clone().negate();
-    var planeUp = new THREE.Vector3().lerpVectors(leftNormal, rightNormal, 0.5).normalize();
+    let leftNormal = leftPinchRight.clone();
+    let rightNormal = rightPinchRight.clone().negate();
+    let planeUp = new THREE.Vector3().lerpVectors(leftNormal, rightNormal, 0.5).normalize();
 
-    var planeRight = new THREE.Vector3().subVectors(rightPinchPos, leftPinchPos);
+    let planeRight = new THREE.Vector3().subVectors(rightPinchPos, leftPinchPos);
     planeRight.projectOnPlane(planeUp).normalize();
 
-    var planeForward = new THREE.Vector3().crossVectors(planeRight, planeUp).normalize();
+    let planeForward = new THREE.Vector3().crossVectors(planeRight, planeUp).normalize();
 
-    var planeRotationMatrix = new THREE.Matrix4();
+    let planeRotationMatrix = new THREE.Matrix4();
     planeRotationMatrix.makeBasis(planeRight, planeUp, planeForward);
 
-    var planePos = new THREE.Vector3().lerpVectors(leftPinchPos, rightPinchPos, 0.5);
-    var planeRot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
+    let planePos = new THREE.Vector3().lerpVectors(leftPinchPos, rightPinchPos, 0.5);
+    let planeRot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
 
     const planeObj = this.context.planeEntity.object3D;
     planeObj.position.copy(planePos);
