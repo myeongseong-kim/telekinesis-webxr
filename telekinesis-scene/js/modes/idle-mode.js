@@ -20,7 +20,7 @@ export class IdleMode extends Mode {
   handlePinchStart(handEntity) {
     super.handlePinchStart(handEntity);
 
-    var toMode = this.context.modeManager.modes['UniManual'];
+    let toMode = this.context.modeManager.modes['UniManual'];
     toMode.handEntity = handEntity;
 
     this.context.modeManager.transitTo(toMode);

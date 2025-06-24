@@ -19,44 +19,44 @@ export class UniManualMode extends Mode {
 
     const planeObj = this.context.planeEntity.object3D;
     const targetObj = this.context.targetEntity.object3D;
-    var prePlaneWorldPos = new THREE.Vector3();
-    var prePlnaeWorldRot = new THREE.Quaternion();
 
+    let prePlaneWorldPos = new THREE.Vector3();
+    let prePlnaeWorldRot = new THREE.Quaternion();
     planeObj.getWorldPosition(prePlaneWorldPos);
     planeObj.getWorldQuaternion(prePlnaeWorldRot);
 
     this.updatePlaneTransform();
 
-    var curPlaneWorldPos = new THREE.Vector3();
-    var curPlaneWorldRot = new THREE.Quaternion();
+    let curPlaneWorldPos = new THREE.Vector3();
+    let curPlaneWorldRot = new THREE.Quaternion();
     planeObj.getWorldPosition(curPlaneWorldPos);
     planeObj.getWorldQuaternion(curPlaneWorldRot);
 
-    var deltaPos = new THREE.Vector3().subVectors(curPlaneWorldPos, prePlaneWorldPos);
-    var deltaRot = new THREE.Quaternion().multiplyQuaternions(curPlaneWorldRot, prePlnaeWorldRot.clone().invert());
+    let deltaPos = new THREE.Vector3().subVectors(curPlaneWorldPos, prePlaneWorldPos);
+    let deltaRot = new THREE.Quaternion().multiplyQuaternions(curPlaneWorldRot, prePlnaeWorldRot.clone().invert());
 
-    var targetWorldPos = new THREE.Vector3();
-    var targetWorldRot = new THREE.Quaternion();
+    let targetWorldPos = new THREE.Vector3();
+    let targetWorldRot = new THREE.Quaternion();
     targetObj.getWorldPosition(targetWorldPos);
     targetObj.getWorldQuaternion(targetWorldRot);
 
-    var newTargetWorldPos = new THREE.Vector3().addVectors(targetWorldPos, deltaPos);
-    var newTargetWorldRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetWorldRot);
-    var newTargetWorldTransform = new THREE.Matrix4().compose(
+    let newTargetWorldPos = new THREE.Vector3().addVectors(targetWorldPos, deltaPos);
+    let newTargetWorldRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetWorldRot);
+    let newTargetWorldTransform = new THREE.Matrix4().compose(
       newTargetWorldPos,
       newTargetWorldRot,
       new THREE.Vector3(1, 1, 1)
     );
 
-    var newTargetLocalPos = new THREE.Vector3();
-    var newTargetLocalRot = new THREE.Quaternion();
-    var newTargetLocalTransform = newTargetWorldTransform.clone();
+    let newTargetLocalPos = new THREE.Vector3();
+    let newTargetLocalRot = new THREE.Quaternion();
+    let newTargetLocalTransform = newTargetWorldTransform.clone();
     if (targetObj.parent) {
       targetObj.parent.updateMatrixWorld(true);
-      var inverseParentTransform = targetObj.parent.matrixWorld.clone().invert();
+      let inverseParentTransform = targetObj.parent.matrixWorld.clone().invert();
       newTargetLocalTransform.premultiply(inverseParentTransform);
     }
-    var tempLocalScl = new THREE.Vector3();
+    let tempLocalScl = new THREE.Vector3();
     newTargetLocalTransform.decompose(newTargetLocalPos, newTargetLocalRot, tempLocalScl);
 
     targetObj.position.copy(newTargetLocalPos);
@@ -76,10 +76,10 @@ export class UniManualMode extends Mode {
   handlePinchStart(handEntity) {
     super.handlePinchStart(handEntity);
 
-    var toMode = this.context.modeManager.modes['BiManual'];
+    let toMode = this.context.modeManager.modes['BiManual'];
 
-    var exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
-    var newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
+    const exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
+    const newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
 
     if (exHandedness == 'left' && newHandedness == 'right') {
       toMode.leftHandEntity = this.handEntity;
@@ -101,21 +101,21 @@ export class UniManualMode extends Mode {
   handlePinchEnd(handEntity) {
     super.handlePinchEnd(handEntity);
 
-    var toMode = this.context.modeManager.modes['Idle'];
+    let toMode = this.context.modeManager.modes['Idle'];
 
     this.context.modeManager.transitTo(toMode);
   }
 
   updatePlaneTransform() {
-    var handData = this.handEntity.components['hand-tracking-controls'];
-    var handedness = handData.data.hand;
+    const handData = this.handEntity.components['hand-tracking-controls'];
+    const handedness = handData.data.hand;
 
-    var pinchPos = new THREE.Vector3().copy(handData.pinchEventDetail.position);
-    var pinchRot = new THREE.Quaternion().copy(handData.pinchEventDetail.wristRotation);
+    let pinchPos = new THREE.Vector3().copy(handData.pinchEventDetail.position);
+    let pinchRot = new THREE.Quaternion().copy(handData.pinchEventDetail.wristRotation);
 
-    var pinchUp = new THREE.Vector3();
-    var pinchRight = new THREE.Vector3();
-    var pinchForward = new THREE.Vector3();
+    let pinchUp = new THREE.Vector3();
+    let pinchRight = new THREE.Vector3();
+    let pinchForward = new THREE.Vector3();
 
     var pinchRotationMatrix = new THREE.Matrix4();
     pinchRotationMatrix.makeRotationFromQuaternion(pinchRot);
@@ -135,11 +135,11 @@ export class UniManualMode extends Mode {
     // right
     var planeRight = new THREE.Vector3().crossVectors(planeUp, planeForward);
 
-    var planeRotationMatrix = new THREE.Matrix4();
+    let planeRotationMatrix = new THREE.Matrix4();
     planeRotationMatrix.makeBasis(planeRight, planeUp, planeForward);
 
-    var planePos = pinchPos.clone();
-    var planeRot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
+    let planePos = pinchPos.clone();
+    let planeRot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
 
     const planeObj = this.context.planeEntity.object3D;
     planeObj.position.copy(planePos);
