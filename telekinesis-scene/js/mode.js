@@ -1,6 +1,7 @@
 export class Mode {
   constructor(context) {
     this.context = context;
+    this.name = null;
   }
 
   enter() {
@@ -12,8 +13,4 @@ export class Mode {
   exit() {
     // console.log(`Exit: ${this.constructor.name} Mode`);
   }
-
-  handlePinchStart(handEntity) {}
-  handlePinchMove(handEntity) {}
-  handlePinchEnd(handEntity) {}
 }

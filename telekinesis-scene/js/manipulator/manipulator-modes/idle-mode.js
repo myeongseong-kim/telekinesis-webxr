@@ -1,8 +1,9 @@
-import { Mode } from './mode.js';
+import { Mode } from '../../mode.js';
 
 export class IdleMode extends Mode {
   constructor(context) {
     super(context);
+    this.name = 'Idle';
   }
 
   enter() {
@@ -18,19 +19,15 @@ export class IdleMode extends Mode {
   }
 
   handlePinchStart(handEntity) {
-    super.handlePinchStart(handEntity);
-
     let toMode = this.context.modeManager.modes['UniManual'];
+    // let toMode = this.context.modeManager.modes['UniManipulate6Dof'];
+    // let toMode = this.context.modeManager.modes['UniTranslate3Dof'];
     toMode.handEntity = handEntity;
 
     this.context.modeManager.transitTo(toMode);
   }
 
-  handlePinchMove(handEntity) {
-    super.handlePinchMove(handEntity);
-  }
+  handlePinchMove(handEntity) {}
 
-  handlePinchEnd(handEntity) {
-    super.handlePinchEnd(handEntity);
-  }
+  handlePinchEnd(handEntity) {}
 }

@@ -1,17 +1,18 @@
-import { IdleMode } from './modes/idle-mode.js';
-import { UniManualMode } from './modes/uni-manual-mode.js';
-import { BiManualMode } from './modes/bi-manual-mode.js';
-
 export class ModeManager {
   constructor(context) {
     this.context = context;
     this.currentMode = null;
-    this.modes = {
-      Idle: new IdleMode(this.context),
-      UniManual: new UniManualMode(this.context),
-      BiManual: new BiManualMode(this.context),
-    };
-    this.transitTo(this.modes['Idle']);
+    this.modes = {};
+  }
+
+  add(mode) {
+    let name = mode.name;
+    this.modes[name] = mode;
+  }
+
+  initTo(mode) {
+    this.currentMode = mode;
+    this.currentMode.enter();
   }
 
   transitTo(mode) {

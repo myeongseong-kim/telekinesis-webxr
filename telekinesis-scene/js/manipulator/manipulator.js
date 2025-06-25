@@ -1,4 +1,7 @@
-import { ModeManager } from './mode-manager.js';
+import { ModeManager } from '../mode-manager.js';
+import { IdleMode } from './manipulator-modes/idle-mode.js';
+import { UniManualMode } from './manipulator-modes/uni-manual-mode.js';
+import { BiManualMode } from './manipulator-modes/bi-manual-mode.js';
 
 AFRAME.registerComponent('manipulator', {
   schema: {
@@ -8,6 +11,10 @@ AFRAME.registerComponent('manipulator', {
 
   init: function () {
     this.modeManager = new ModeManager(this);
+    this.modeManager.add(new IdleMode(this));
+    this.modeManager.add(new UniManualMode(this));
+    this.modeManager.add(new BiManualMode(this));
+    this.modeManager.initTo(this.modeManager.modes['Idle']);
 
     this.leftHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: left"]');
     this.rightHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: right"]');

@@ -1,9 +1,12 @@
-import { Mode } from './mode.js';
+import { Mode } from '../../mode.js';
 
-export class UniManualMode extends Mode {
+export class BiManualMode extends Mode {
   constructor(context) {
     super(context);
-    this.handEntity = null;
+    this.name = 'BiManual';
+
+    this.leftHandEntity = null;
+    this.rightHandEntity = null;
   }
 
   enter() {
@@ -70,23 +73,22 @@ export class UniManualMode extends Mode {
     this.context.planeEntity.setAttribute('visible', 'false');
     this.initPlaneTransform();
 
-    this.handEntity = null;
+    this.leftHandEntity = null;
+    this.rightHandEntity = null;
   }
 
-  handlePinchStart(handEntity) {
-    super.handlePinchStart(handEntity);
+  handlePinchStart(handEntity) {}
 
-    let toMode = this.context.modeManager.modes['BiManual'];
+  handlePinchMove(handEntity) {}
 
-    const exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
-    const newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
+  handlePinchEnd(handEntity) {
+    let toMode = this.context.modeManager.modes['UniManual'];
 
-    if (exHandedness == 'left' && newHandedness == 'right') {
-      toMode.leftHandEntity = this.handEntity;
-      toMode.rightHandEntity = handEntity;
-    } else if (exHandedness == 'right' && newHandedness == 'left') {
-      toMode.leftHandEntity = handEntity;
-      toMode.rightHandEntity = this.handEntity;
+    const handedness = handEntity.components['hand-tracking-controls'].data.hand;
+    if (handedness == 'left') {
+      toMode.handEntity = this.rightHandEntity;
+    } else if (handedness == 'right') {
+      toMode.handEntity = this.leftHandEntity;
     } else {
       console.error('Hand Tracking Goes Wrong...');
     }
@@ -94,51 +96,46 @@ export class UniManualMode extends Mode {
     this.context.modeManager.transitTo(toMode);
   }
 
-  handlePinchMove(handEntity) {
-    super.handlePinchMove(handEntity);
-  }
-
-  handlePinchEnd(handEntity) {
-    super.handlePinchEnd(handEntity);
-
-    let toMode = this.context.modeManager.modes['Idle'];
-
-    this.context.modeManager.transitTo(toMode);
-  }
-
   updatePlaneTransform() {
-    const handData = this.handEntity.components['hand-tracking-controls'];
-    const handedness = handData.data.hand;
+    const leftHandData = this.leftHandEntity.components['hand-tracking-controls'];
+    const rightHandData = this.rightHandEntity.components['hand-tracking-controls'];
 
-    let pinchPos = new THREE.Vector3().copy(handData.pinchEventDetail.position);
-    let pinchRot = new THREE.Quaternion().copy(handData.pinchEventDetail.wristRotation);
+    var leftPinchPos = new THREE.Vector3().copy(leftHandData.pinchEventDetail.position);
+    var leftPinchRot = new THREE.Quaternion().copy(leftHandData.pinchEventDetail.wristRotation);
 
-    let pinchUp = new THREE.Vector3();
-    let pinchRight = new THREE.Vector3();
-    let pinchForward = new THREE.Vector3();
+    var rightPinchPos = new THREE.Vector3().copy(rightHandData.pinchEventDetail.position);
+    var rightPinchRot = new THREE.Quaternion().copy(rightHandData.pinchEventDetail.wristRotation);
 
-    var pinchRotationMatrix = new THREE.Matrix4();
-    pinchRotationMatrix.makeRotationFromQuaternion(pinchRot);
-    pinchRotationMatrix.extractBasis(pinchRight, pinchUp, pinchForward);
+    var leftPinchRight = new THREE.Vector3();
+    var leftPinchUp = new THREE.Vector3();
+    var leftPinchForward = new THREE.Vector3();
+    var leftPinchRotationMatrix = new THREE.Matrix4();
+    leftPinchRotationMatrix.makeRotationFromQuaternion(leftPinchRot);
+    leftPinchRotationMatrix.extractBasis(leftPinchRight, leftPinchUp, leftPinchForward);
+
+    var rightPinchRight = new THREE.Vector3();
+    var rightPinchUp = new THREE.Vector3();
+    var rightPinchForward = new THREE.Vector3();
+    var rightPinchRotationMatrix = new THREE.Matrix4();
+    rightPinchRotationMatrix.makeRotationFromQuaternion(rightPinchRot);
+    rightPinchRotationMatrix.extractBasis(rightPinchRight, rightPinchUp, rightPinchForward);
 
     // up
-    var planeUp;
-    if (handedness == 'left') {
-      planeUp = pinchRight.clone();
-    } else {
-      planeUp = pinchRight.clone().negate();
-    }
+    let leftPlaneNormal = leftPinchRight.clone();
+    let rightPlaneNormal = rightPinchRight.clone().negate();
+    let planeUp = new THREE.Vector3().lerpVectors(leftPlaneNormal, rightPlaneNormal, 0.5).normalize();
 
     // forward
-    var planeForward = pinchForward.clone();
+    let planeForward = new THREE.Vector3().lerpVectors(leftPinchForward, rightPinchForward, 0.5).normalize();
+    planeForward.projectOnPlane(planeUp).normalize();
 
-    // right
-    var planeRight = new THREE.Vector3().crossVectors(planeUp, planeForward);
+    //right
+    let planeRight = new THREE.Vector3().crossVectors(planeUp, planeForward).normalize();
 
     let planeRotationMatrix = new THREE.Matrix4();
     planeRotationMatrix.makeBasis(planeRight, planeUp, planeForward);
 
-    let planePos = pinchPos.clone();
+    let planePos = new THREE.Vector3().lerpVectors(leftPinchPos, rightPinchPos, 0.5);
     let planeRot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
 
     const planeObj = this.context.planeEntity.object3D;
