@@ -5,6 +5,7 @@
     <title>Telekinesis Scene</title>
     <meta name="description" content="Telekinesis Scene">
     <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+    <script type="module" src="js/hand-pose/hand-pose-controls.js"></script> 
     <script type="module" src="js/manipulator/manipulator.js"></script>
   </head>
   <body>
@@ -24,8 +25,8 @@
       <a-circle src="#groundTexture" rotation="-90 0 0" radius="32"></a-circle>
 
       <!--Tracked controls. -->
-      <a-entity hand-tracking-controls="hand: left"></a-entity>
-      <a-entity hand-tracking-controls="hand: right"></a-entity>
+      <a-entity hand-tracking-controls="hand: left" hand-pose-controls="debug: true"></a-entity>
+      <a-entity hand-tracking-controls="hand: right" hand-pose-controls="debug: true"></a-entity>
 
       <a-entity manipulator="target: #targetBox">
         <a-entity id="planeIndicator" position="0 0 0" rotation="0 0 0" visible="false">
