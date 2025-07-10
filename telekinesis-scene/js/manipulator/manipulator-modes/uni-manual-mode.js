@@ -69,15 +69,11 @@ export class UniManualMode extends Mode {
     this.handEntity = null;
   }
 
-  handleGrabStart(handEntity) { }
-
-  handleGrabEnd(handEntity) { }
-
-  handlePinchStart(handEntity) {
+  handleGrabStart(handEntity) {
     let modeTo = this.context.modeManager.modes['BiManual'];
 
-    const exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
-    const newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
+    let exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
+    let newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
 
     if (exHandedness == 'left' && newHandedness == 'right') {
       modeTo.leftHandEntity = this.handEntity;
@@ -92,40 +88,46 @@ export class UniManualMode extends Mode {
     this.context.modeManager.transitTo(modeTo);
   }
 
-  handlePinchEnd(handEntity) {
+  handleGrabEnd(handEntity) {
     let modeTo = this.context.modeManager.modes['Idle'];
 
     this.context.modeManager.transitTo(modeTo);
   }
+
+  handlePinchStart(handEntity) { }
+
+  handlePinchEnd(handEntity) { }
 
   handleLockStart(handEntity) { }
 
   handleLockEnd(handEntity) { }
 
   updatePlaneTransform() {
-    const handData = this.handEntity.components['hand-tracking-controls'];
-    const handedness = handData.data.hand;
+    const handPose = this.handEntity.components['hand-pose-controls'];
+    let interactorPos = new THREE.Vector3().copy(handPose.getPointerPosition());
+    let interactorRot = new THREE.Quaternion().copy(handPose.getRootRotation());
 
-    let pinchPos = new THREE.Vector3().copy(handData.pinchEventDetail.position);
-    let pinchRot = new THREE.Quaternion().copy(handData.pinchEventDetail.wristRotation);
+    let interactorUp = new THREE.Vector3();
+    let interactorRight = new THREE.Vector3();
+    let interactorForward = new THREE.Vector3();
+    let interactorRotationMatrix = new THREE.Matrix4();
+    interactorRotationMatrix.makeRotationFromQuaternion(interactorRot);
+    interactorRotationMatrix.extractBasis(interactorRight, interactorUp, interactorForward);
 
-    let pinchUp = new THREE.Vector3();
-    let pinchRight = new THREE.Vector3();
-    let pinchForward = new THREE.Vector3();
-    let pinchRotationMatrix = new THREE.Matrix4();
-    pinchRotationMatrix.makeRotationFromQuaternion(pinchRot);
-    pinchRotationMatrix.extractBasis(pinchRight, pinchUp, pinchForward);
+    // center
+    let planeCenter = interactorPos.clone();
 
     // up
     let planeUp;
+    let handedness = this.handEntity.components['hand-tracking-controls'].data.hand;
     if (handedness == 'left') {
-      planeUp = pinchRight.clone();
+      planeUp = interactorRight.clone();
     } else {
-      planeUp = pinchRight.clone().negate();
+      planeUp = interactorRight.clone().negate();
     }
 
     // forward
-    let planeForward = pinchForward.clone();
+    let planeForward = interactorForward.clone();
 
     // right
     let planeRight = new THREE.Vector3().crossVectors(planeUp, planeForward);
@@ -133,7 +135,7 @@ export class UniManualMode extends Mode {
     let planeRotationMatrix = new THREE.Matrix4();
     planeRotationMatrix.makeBasis(planeRight, planeUp, planeForward);
 
-    let pos = new THREE.Vector3().copy(pinchPos);
+    let pos = new THREE.Vector3().copy(planeCenter);
     let rot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
     let scl = new THREE.Vector3();
 
