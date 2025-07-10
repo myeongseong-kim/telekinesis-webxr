@@ -69,6 +69,10 @@ export class UniManualMode extends Mode {
     this.handEntity = null;
   }
 
+  handleGrabStart(handEntity) { }
+
+  handleGrabEnd(handEntity) { }
+
   handlePinchStart(handEntity) {
     let modeTo = this.context.modeManager.modes['BiManual'];
 
@@ -93,6 +97,10 @@ export class UniManualMode extends Mode {
 
     this.context.modeManager.transitTo(modeTo);
   }
+
+  handleLockStart(handEntity) { }
+
+  handleLockEnd(handEntity) { }
 
   updatePlaneTransform() {
     const handData = this.handEntity.components['hand-tracking-controls'];
