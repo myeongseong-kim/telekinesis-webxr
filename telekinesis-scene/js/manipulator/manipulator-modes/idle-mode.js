@@ -18,6 +18,10 @@ export class IdleMode extends Mode {
     super.exit();
   }
 
+  handleGrabStart(handEntity) { }
+
+  handleGrabEnd(handEntity) { }
+
   handlePinchStart(handEntity) {
     let modeTo = this.context.modeManager.modes['UniManual'];
     modeTo.handEntity = handEntity;
@@ -26,4 +30,8 @@ export class IdleMode extends Mode {
   }
 
   handlePinchEnd(handEntity) { }
+
+  handleLockStart(handEntity) { }
+
+  handleLockEnd(handEntity) { }
 }

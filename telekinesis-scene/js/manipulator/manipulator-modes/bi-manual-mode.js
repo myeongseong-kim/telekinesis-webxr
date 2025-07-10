@@ -71,6 +71,10 @@ export class BiManualMode extends Mode {
     this.rightHandEntity = null;
   }
 
+  handleGrabStart(handEntity) { }
+
+  handleGrabEnd(handEntity) { }
+
   handlePinchStart(handEntity) { }
 
   handlePinchEnd(handEntity) {
@@ -87,6 +91,10 @@ export class BiManualMode extends Mode {
 
     this.context.modeManager.transitTo(modeTo);
   }
+
+  handleLockStart(handEntity) { }
+
+  handleLockEnd(handEntity) { }
 
   updatePlaneTransform() {
     const leftHandData = this.leftHandEntity.components['hand-tracking-controls'];
