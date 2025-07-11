@@ -57,3 +57,24 @@ AFRAME.registerComponent('manipulator', {
     }
   },
 });
+
+export function setWorldTransform(entity, pos, rot, scl) {
+  let transform = new THREE.Matrix4().compose(pos, rot, scl);
+
+  let localPos = new THREE.Vector3();
+  let localRot = new THREE.Quaternion();
+  let localScl = new THREE.Vector3();
+  let localTransform = transform.clone();
+
+  if (entity.parent) {
+    entity.parent.updateMatrixWorld(true);
+    let inverseParentTransform = entity.parent.matrixWorld.clone().invert();
+    localTransform.premultiply(inverseParentTransform);
+  }
+  localTransform.decompose(localPos, localRot, localScl);
+
+  entity.position.copy(localPos);
+  entity.quaternion.copy(localRot);
+  entity.scale.copy(localScl);
+  entity.updateMatrixWorld(true);
+}
