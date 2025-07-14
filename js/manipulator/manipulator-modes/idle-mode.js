@@ -1,4 +1,5 @@
 import { Mode } from '../../mode.js';
+import { LockPose } from '../../poses/lock-pose.js';
 
 export class IdleMode extends Mode {
   constructor(context) {
@@ -18,16 +19,35 @@ export class IdleMode extends Mode {
     super.exit();
   }
 
-  handlePinchStart(handEntity) {
-    let toMode = this.context.modeManager.modes['UniManual'];
-    // let toMode = this.context.modeManager.modes['UniManipulate6Dof'];
-    // let toMode = this.context.modeManager.modes['UniTranslate3Dof'];
-    toMode.handEntity = handEntity;
+  handleGrabStart(handEntity) {
+    let modeTo = this.context.modeManager.modes['UniManual'];
+    modeTo.handEntity = handEntity;
 
-    this.context.modeManager.transitTo(toMode);
+    this.context.modeManager.transitTo(modeTo);
   }
 
-  handlePinchMove(handEntity) {}
+  handleGrabEnd(handEntity) { }
 
-  handlePinchEnd(handEntity) {}
+  handlePinchStart(handEntity) {
+    const handPose = handEntity.components['hand-pose-controls'];
+
+    if (LockPose.isSelected(handPose.currentPose)) {
+      let modeTo = this.context.modeManager.modes['UniTranslate'];
+      modeTo.handEntity = handEntity;
+
+      this.context.modeManager.transitTo(modeTo);
+    }
+    else {
+      let modeTo = this.context.modeManager.modes['UniManipulate'];
+      modeTo.handEntity = handEntity;
+
+      this.context.modeManager.transitTo(modeTo);
+    }
+  }
+
+  handlePinchEnd(handEntity) { }
+
+  handleLockStart(handEntity) { }
+
+  handleLockEnd(handEntity) { }
 }
