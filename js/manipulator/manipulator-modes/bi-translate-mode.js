@@ -48,10 +48,10 @@ export class BiTranslateMode extends Mode {
 
     let distToIndicator = cameraPos.distanceTo(preIndicatorPos);
     let distToTarget = cameraPos.distanceTo(targetPos);
-    let scaleRatio = distToTarget / distToIndicator;
+    let ratio = distToTarget / distToIndicator;
 
     let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
-    deltaPos.multiplyScalar(scaleRatio);
+    deltaPos.multiplyScalar(ratio);
     let deltaRot = new THREE.Quaternion().identity();
 
     let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);

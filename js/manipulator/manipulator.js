@@ -30,6 +30,8 @@ AFRAME.registerComponent('manipulator', {
     this.modeManager.add(new BiRotateMode(this));
     this.modeManager.initTo(this.modeManager.modes['Idle']);
 
+    this.sensitivity = 1.0;
+
     this.leftHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: left"]');
     this.rightHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: right"]');
 
