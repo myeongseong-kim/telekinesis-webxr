@@ -22,9 +22,9 @@ export class UniManualMode extends Mode {
 
     const planeObj = this.context.planeEntity.object3D;
     const targetObj = this.context.targetEntity.object3D;
+
     let preIndicatorPos = new THREE.Vector3();
     let preIndicatorRot = new THREE.Quaternion();
-
     planeObj.getWorldPosition(preIndicatorPos);
     planeObj.getWorldQuaternion(preIndicatorRot);
 
@@ -35,15 +35,15 @@ export class UniManualMode extends Mode {
     planeObj.getWorldPosition(curIndicatorPos);
     planeObj.getWorldQuaternion(curIndicatorRot);
 
-    let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
-    let deltaRot = new THREE.Quaternion().multiplyQuaternions(curIndicatorRot, preIndicatorRot.clone().invert());
-
     let targetPos = new THREE.Vector3();
     let targetRot = new THREE.Quaternion();
     let targetScl = new THREE.Vector3();
     targetObj.getWorldPosition(targetPos);
     targetObj.getWorldQuaternion(targetRot);
     targetObj.getWorldScale(targetScl);
+
+    let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
+    let deltaRot = new THREE.Quaternion().multiplyQuaternions(curIndicatorRot, preIndicatorRot.clone().invert());
 
     let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);
     let newTargetRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetRot);

@@ -1,10 +1,10 @@
 import { Mode } from '../../mode.js';
 import { setWorldTransform } from '../manipulator.js';
 
-export class BiManipulateMode extends Mode {
+export class BiTranslateMode extends Mode {
   constructor(context) {
     super(context);
-    this.name = 'BiManipulate';
+    this.name = 'BiTranslate';
 
     this.leftHandEntity = null;
     this.rightHandEntity = null;
@@ -43,8 +43,16 @@ export class BiManipulateMode extends Mode {
     targetObj.getWorldQuaternion(targetRot);
     targetObj.getWorldScale(targetScl);
 
+    const cameraPos = new THREE.Vector3();
+    this.context.el.sceneEl.camera.getWorldPosition(cameraPos);
+
+    let distToIndicator = cameraPos.distanceTo(preIndicatorPos);
+    let distToTarget = cameraPos.distanceTo(targetPos);
+    let scaleRatio = distToTarget / distToIndicator;
+
     let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
-    let deltaRot = new THREE.Quaternion().multiplyQuaternions(curIndicatorRot, preIndicatorRot.clone().invert());
+    deltaPos.multiplyScalar(scaleRatio);
+    let deltaRot = new THREE.Quaternion().identity();
 
     let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);
     let newTargetRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetRot);
@@ -78,29 +86,21 @@ export class BiManipulateMode extends Mode {
   handlePinchStart(handEntity) { }
 
   handlePinchEnd(handEntity) {
-    let modeTo = this.context.modeManager.modes['UniManipulate'];
-
-    const handedness = handEntity.components['hand-tracking-controls'].data.hand;
-    if (handedness == 'left') {
-      modeTo.handEntity = this.rightHandEntity;
-    } else if (handedness == 'right') {
-      modeTo.handEntity = this.leftHandEntity;
-    } else {
-      console.error('Hand Tracking Goes Wrong...');
-    }
+    let modeTo = this.context.modeManager.modes['UniTranslate'];
+    modeTo.handEntity = this.getOppositeHandEntity(handEntity);
 
     this.context.modeManager.transitTo(modeTo);
   }
 
-  handleLockStart(handEntity) {
+  handleLockStart(handEntity) { }
+
+  handleLockEnd(handEntity) {
     let modeTo = this.context.modeManager.modes['BiRotate'];
-    modeTo.pivotHandEntity = handEntity;
-    modeTo.handleHandEntity = this.getOppositeHandEntity(handEntity);
+    modeTo.pivotHandEntity = this.getOppositeHandEntity(handEntity);;
+    modeTo.handleHandEntity = handEntity;
 
     this.context.modeManager.transitTo(modeTo);
   }
-
-  handleLockEnd(handEntity) { }
 
   initSphereTransform() {
     const leftHandPose = this.leftHandEntity.components['hand-pose-controls'];
@@ -176,9 +176,6 @@ export class BiManipulateMode extends Mode {
     rightWristRotationMatrix.makeRotationFromQuaternion(rightWristRot);
     rightWristRotationMatrix.extractBasis(rightWristRight, rightWristUp, rightWristForward);
 
-    // right
-    let sphereRight = new THREE.Vector3().subVectors(rightPointerPos, leftPointerPos).normalize();
-
     const sphereObj = this.context.sphereEntity.object3D;
     let sphereObjPos = new THREE.Vector3();
     let sphereObjRot = new THREE.Quaternion();
@@ -191,10 +188,7 @@ export class BiManipulateMode extends Mode {
       new THREE.Vector3().lerpVectors(leftPointerPos, rightPointerPos, 0.5),
       sphereObjPos
     );
-    let deltaRot = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3().setFromMatrixColumn(sphereObj.matrixWorld, 0),
-      sphereRight
-    );
+    let deltaRot = new THREE.Quaternion().identity();
 
     let pos = new THREE.Vector3().addVectors(sphereObjPos, deltaPos);
     let rot = new THREE.Quaternion().multiplyQuaternions(deltaRot, sphereObjRot);

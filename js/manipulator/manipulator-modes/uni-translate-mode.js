@@ -1,5 +1,6 @@
 import { Mode } from '../../mode.js';
 import { setWorldTransform } from '../manipulator.js';
+import { LockPose } from '../../poses/lock-pose.js';
 
 export class UniTranslateMode extends Mode {
   constructor(context) {
@@ -22,9 +23,9 @@ export class UniTranslateMode extends Mode {
 
     const sphereObj = this.context.sphereEntity.object3D;
     const targetObj = this.context.targetEntity.object3D;
+
     let preIndicatorPos = new THREE.Vector3();
     let preIndicatorRot = new THREE.Quaternion();
-
     sphereObj.getWorldPosition(preIndicatorPos);
     sphereObj.getWorldQuaternion(preIndicatorRot);
 
@@ -35,15 +36,15 @@ export class UniTranslateMode extends Mode {
     sphereObj.getWorldPosition(curIndicatorPos);
     sphereObj.getWorldQuaternion(curIndicatorRot);
 
-    let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
-    let deltaRot = new THREE.Quaternion().identity();
-
     let targetPos = new THREE.Vector3();
     let targetRot = new THREE.Quaternion();
     let targetScl = new THREE.Vector3();
     targetObj.getWorldPosition(targetPos);
     targetObj.getWorldQuaternion(targetRot);
     targetObj.getWorldScale(targetScl);
+
+    let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
+    let deltaRot = new THREE.Quaternion().identity();
 
     let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);
     let newTargetRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetRot);
@@ -74,11 +75,33 @@ export class UniTranslateMode extends Mode {
   handleGrabEnd(handEntity) { }
 
   handlePinchStart(handEntity) {
-    let modeTo = this.context.modeManager.modes['BiRotate'];
-    modeTo.pivotHandEntity = this.handEntity;
-    modeTo.handleHandEntity = handEntity;
+    const handPose = handEntity.components['hand-pose-controls'];
 
-    this.context.modeManager.transitTo(modeTo);
+    if (LockPose.isSelected(handPose.currentPose)) {
+      let modeTo = this.context.modeManager.modes['BiTranslate'];
+  
+      const exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
+      const newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
+  
+      if (exHandedness == 'left' && newHandedness == 'right') {
+        modeTo.leftHandEntity = this.handEntity;
+        modeTo.rightHandEntity = handEntity;
+      } else if (exHandedness == 'right' && newHandedness == 'left') {
+        modeTo.leftHandEntity = handEntity;
+        modeTo.rightHandEntity = this.handEntity;
+      } else {
+        console.error('Hand Tracking Goes Wrong...');
+      }
+  
+      this.context.modeManager.transitTo(modeTo);
+    }
+    else {
+      let modeTo = this.context.modeManager.modes['BiRotate'];
+      modeTo.pivotHandEntity = this.handEntity;
+      modeTo.handleHandEntity = handEntity;
+
+      this.context.modeManager.transitTo(modeTo);
+    }
   }
 
   handlePinchEnd(handEntity) {

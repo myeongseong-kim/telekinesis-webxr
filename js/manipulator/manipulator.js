@@ -8,6 +8,7 @@ import { BiManualMode } from './manipulator-modes/bi-manual-mode.js';
 import { UniManipulateMode } from './manipulator-modes/uni-manipulate-mode.js';
 import { UniTranslateMode } from './manipulator-modes/uni-translate-mode.js';
 import { BiManipulateMode } from './manipulator-modes/bi-manipulate-mode.js';
+import { BiTranslateMode } from './manipulator-modes/bi-translate-mode.js';
 import { BiRotateMode } from './manipulator-modes/bi-rotate-mode.js';
 
 AFRAME.registerComponent('manipulator', {
@@ -25,6 +26,7 @@ AFRAME.registerComponent('manipulator', {
     this.modeManager.add(new UniManipulateMode(this));
     this.modeManager.add(new UniTranslateMode(this));
     this.modeManager.add(new BiManipulateMode(this));
+    this.modeManager.add(new BiTranslateMode(this));
     this.modeManager.add(new BiRotateMode(this));
     this.modeManager.initTo(this.modeManager.modes['Idle']);
 
@@ -106,6 +108,7 @@ AFRAME.registerComponent('manipulator', {
     }
 
     if (this.modeManager.currentMode) {
+      this.el.sceneEl.object3D.updateMatrixWorld(true);
       this.modeManager.currentMode.execute();
     }
   },
