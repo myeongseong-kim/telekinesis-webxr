@@ -27,7 +27,20 @@ export class IdleMode extends Mode {
 
   handleGrabEnd(handEntity) { }
 
-  handlePinchStart(handEntity) { }
+  handlePinchStart(handEntity) {
+    if (this.context.isLocked(handEntity)) {
+      let modeTo = this.context.modeManager.modes['UniTranslate'];
+      modeTo.handEntity = handEntity;
+
+      this.context.modeManager.transitTo(modeTo);
+    }
+    else {
+      let modeTo = this.context.modeManager.modes['UniManipulate'];
+      modeTo.handEntity = handEntity;
+
+      this.context.modeManager.transitTo(modeTo);
+    }
+  }
 
   handlePinchEnd(handEntity) { }
 

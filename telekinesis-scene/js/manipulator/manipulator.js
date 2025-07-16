@@ -5,11 +5,17 @@ import { ModeManager } from '../mode-manager.js';
 import { IdleMode } from './manipulator-modes/idle-mode.js';
 import { UniManualMode } from './manipulator-modes/uni-manual-mode.js';
 import { BiManualMode } from './manipulator-modes/bi-manual-mode.js';
+import { UniManipulateMode } from './manipulator-modes/uni-manipulate-mode.js';
+import { UniTranslateMode } from './manipulator-modes/uni-translate-mode.js';
+import { BiManipulateMode } from './manipulator-modes/bi-manipulate-mode.js';
+import { BiTranslateMode } from './manipulator-modes/bi-translate-mode.js';
+import { BiRotateMode } from './manipulator-modes/bi-rotate-mode.js';
 
 AFRAME.registerComponent('manipulator', {
   schema: {
     target: { type: 'selector' },
     plane: { type: 'selector', default: '#planeIndicator' },
+    sphere: { type: 'selector', default: '#sphereIndicator' },
   },
 
   init: function () {
@@ -17,6 +23,11 @@ AFRAME.registerComponent('manipulator', {
     this.modeManager.add(new IdleMode(this));
     this.modeManager.add(new UniManualMode(this));
     this.modeManager.add(new BiManualMode(this));
+    this.modeManager.add(new UniManipulateMode(this));
+    this.modeManager.add(new UniTranslateMode(this));
+    this.modeManager.add(new BiManipulateMode(this));
+    this.modeManager.add(new BiTranslateMode(this));
+    this.modeManager.add(new BiRotateMode(this));
     this.modeManager.initTo(this.modeManager.modes['Idle']);
 
     this.leftHandEntity = this.el.sceneEl.querySelector('[hand-tracking-controls="hand: left"]');
@@ -34,6 +45,7 @@ AFRAME.registerComponent('manipulator', {
 
     this.targetEntity = this.data.target;
     this.planeEntity = this.data.plane;
+    this.sphereEntity = this.data.sphere;
   },
 
   tick: function (time, deltaTime) {
@@ -115,11 +127,21 @@ AFRAME.registerComponent('manipulator', {
     }
 
     if (this.modeManager.currentMode) {
+      this.el.sceneEl.object3D.updateMatrixWorld(true);
       this.modeManager.currentMode.execute();
     }
   },
 
   remove: function () { },
+
+  isLocked: function (handEntity) {
+    if (handEntity == this.leftHandEntity) {
+      return this._leftLock.flag;
+    } else {
+      return this._rightLock.flag;
+    }
+  },
+
 });
 
 export function setWorldTransform(entity, pos, rot, scl) {
