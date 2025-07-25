@@ -46,10 +46,49 @@ AFRAME.registerComponent('manipulator', {
     this.targetEntity = this.data.target;
     this.planeEntity = this.data.plane;
     this.sphereEntity = this.data.sphere;
+
+    this.MAX_DIST = 1.0;  // 1m
+    this.MAX_SPEED = 1.0; // 1m per second
+    this.MAX_ANGULARSPEED = Math.PI / 2; // 90degree per second
   },
 
   tick: function (time, deltaTime) {
+    let cameraPos = new THREE.Vector3();
+    this.el.sceneEl.camera.getWorldPosition(cameraPos);
+
     if (this.leftHandPose) {
+      if (!this.leftHandPose.currentTransform || !this.leftHandPose.previousTransform) return;
+      let leftHandCurrentTransform = this.leftHandPose.currentTransform.clone();
+      let leftHandPreviousTransform = this.leftHandPose.previousTransform.clone();
+
+      let leftHandCurrentPos = new THREE.Vector3();
+      let leftHandCurrentRot = new THREE.Quaternion();
+      let leftHandCurrentScl = new THREE.Vector3();
+      leftHandCurrentTransform.decompose(leftHandCurrentPos, leftHandCurrentRot, leftHandCurrentScl);
+
+      let leftHandPreviousPos = new THREE.Vector3();
+      let leftHandPreviousRot = new THREE.Quaternion();
+      let leftHandPreviousScl = new THREE.Vector3();
+      leftHandPreviousTransform.decompose(leftHandPreviousPos, leftHandPreviousRot, leftHandPreviousScl);
+
+      let dist = cameraPos.distanceTo(leftHandCurrentPos);
+      if (dist > this.MAX_DIST) {
+        this.modeManager.currentMode.handleLockEnd(this.leftHandEntity);
+        this.modeManager.currentMode.handlePinchEnd(this.leftHandEntity);
+        this.modeManager.currentMode.handleGrabEnd(this.leftHandEntity);
+        return;
+      }
+
+      let speed = leftHandCurrentPos.distanceTo(leftHandPreviousPos) / deltaTime;
+      if (speed > this.MAX_SPEED) {
+        return;
+      }
+
+      let angularSpeed = leftHandCurrentRot.angleTo(leftHandPreviousRot) / deltaTime;
+      if (angularSpeed > this.MAX_ANGULARSPEED) {
+        return;
+      }
+
       const leftCurrentPose = this.leftHandPose.currentPose;
       const leftPreviousPose = this.leftHandPose.previousPose;
       if (!leftCurrentPose || !leftPreviousPose) return;
@@ -88,6 +127,38 @@ AFRAME.registerComponent('manipulator', {
       }
     }
     if (this.rightHandPose) {
+      if (!this.rightHandPose.currentTransform || !this.rightHandPose.previousTransform) return;
+      let rightHandCurrentTransform = this.rightHandPose.currentTransform.clone();
+      let rightHandPreviousTransform = this.rightHandPose.previousTransform.clone();
+
+      let rightHandCurrentPos = new THREE.Vector3();
+      let rightHandCurrentRot = new THREE.Quaternion();
+      let rightHandCurrentScl = new THREE.Vector3();
+      rightHandCurrentTransform.decompose(rightHandCurrentPos, rightHandCurrentRot, rightHandCurrentScl);
+
+      let rightHandPreviousPos = new THREE.Vector3();
+      let rightHandPreviousRot = new THREE.Quaternion();
+      let rightHandPreviousScl = new THREE.Vector3();
+      rightHandPreviousTransform.decompose(rightHandPreviousPos, rightHandPreviousRot, rightHandPreviousScl);
+
+      let dist = cameraPos.distanceTo(rightHandCurrentPos);
+      if (dist > this.MAX_DIST) {
+        this.modeManager.currentMode.handleLockEnd(this.rightHandEntity);
+        this.modeManager.currentMode.handlePinchEnd(this.rightHandEntity);
+        this.modeManager.currentMode.handleGrabEnd(this.rightHandEntity);
+        return;
+      }
+
+      let speed = rightHandCurrentPos.distanceTo(rightHandPreviousPos) / deltaTime;
+      if (speed > this.MAX_SPEED) {
+        return;
+      }
+
+      let angularSpeed = rightHandCurrentRot.angleTo(rightHandPreviousRot) / deltaTime;
+      if (angularSpeed > this.MAX_ANGULARSPEED) {
+        return;
+      }
+
       const rightCurrentPose = this.rightHandPose.currentPose;
       const rightPreviousPose = this.rightHandPose.previousPose;
       if (!rightCurrentPose || !rightPreviousPose) return;
