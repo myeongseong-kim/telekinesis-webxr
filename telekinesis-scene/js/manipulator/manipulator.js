@@ -3,6 +3,8 @@ import { GrabPose } from '../poses/grab-pose.js';
 import { LockPose } from '../poses/lock-pose.js';
 import { ModeManager } from '../mode-manager.js';
 import { IdleMode } from './manipulator-modes/idle-mode.js';
+import { ReadyMode } from './manipulator-modes/ready-mode.js';
+import { ScaleMode } from './manipulator-modes/scale-mode.js';
 import { UniManualMode } from './manipulator-modes/uni-manual-mode.js';
 import { BiManualMode } from './manipulator-modes/bi-manual-mode.js';
 import { UniManipulateMode } from './manipulator-modes/uni-manipulate-mode.js';
@@ -21,6 +23,8 @@ AFRAME.registerComponent('manipulator', {
   init: function () {
     this.modeManager = new ModeManager(this);
     this.modeManager.add(new IdleMode(this));
+    this.modeManager.add(new ReadyMode(this));
+    this.modeManager.add(new ScaleMode(this));
     this.modeManager.add(new UniManualMode(this));
     this.modeManager.add(new BiManualMode(this));
     this.modeManager.add(new UniManipulateMode(this));

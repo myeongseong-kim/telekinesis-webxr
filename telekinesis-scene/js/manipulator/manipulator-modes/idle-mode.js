@@ -19,7 +19,8 @@ export class IdleMode extends Mode {
   }
 
   handleGrabStart(handEntity) {
-    let modeTo = this.context.modeManager.modes['UniManual'];
+    // let modeTo = this.context.modeManager.modes['UniManual'];
+    let modeTo = this.context.modeManager.modes['Ready'];
     modeTo.handEntity = handEntity;
 
     this.context.modeManager.transitTo(modeTo);
