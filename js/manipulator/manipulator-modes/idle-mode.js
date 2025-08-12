@@ -1,5 +1,4 @@
 import { Mode } from '../../mode.js';
-import { LockPose } from '../../poses/lock-pose.js';
 
 export class IdleMode extends Mode {
   constructor(context) {
@@ -20,7 +19,8 @@ export class IdleMode extends Mode {
   }
 
   handleGrabStart(handEntity) {
-    let modeTo = this.context.modeManager.modes['UniManual'];
+    // let modeTo = this.context.modeManager.modes['UniManual'];
+    let modeTo = this.context.modeManager.modes['Ready'];
     modeTo.handEntity = handEntity;
 
     this.context.modeManager.transitTo(modeTo);
@@ -29,9 +29,7 @@ export class IdleMode extends Mode {
   handleGrabEnd(handEntity) { }
 
   handlePinchStart(handEntity) {
-    const handPose = handEntity.components['hand-pose-controls'];
-
-    if (LockPose.isSelected(handPose.currentPose)) {
+    if (this.context.isLocked(handEntity)) {
       let modeTo = this.context.modeManager.modes['UniTranslate'];
       modeTo.handEntity = handEntity;
 

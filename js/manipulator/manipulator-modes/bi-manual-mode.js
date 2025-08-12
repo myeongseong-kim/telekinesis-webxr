@@ -76,7 +76,7 @@ export class BiManualMode extends Mode {
   handleGrabEnd(handEntity) {
     let modeTo = this.context.modeManager.modes['UniManual'];
 
-    const handedness = handEntity.components['hand-tracking-controls'].data.hand;
+    let handedness = handEntity.components['hand-tracking-controls'].data.hand;
     if (handedness == 'left') {
       modeTo.handEntity = this.rightHandEntity;
     } else if (handedness == 'right') {
@@ -100,33 +100,36 @@ export class BiManualMode extends Mode {
     const leftHandPose = this.leftHandEntity.components['hand-pose-controls'];
     const rightHandPose = this.rightHandEntity.components['hand-pose-controls'];
 
-    let leftPointerPos = new THREE.Vector3().copy(leftHandPose.getPointerPosition());
-    let leftWristRot = new THREE.Quaternion().copy(leftHandPose.getRootRotation());
+    let leftInteractorPos = new THREE.Vector3().copy(leftHandPose.getPointerPosition());
+    let leftInteractorRot = new THREE.Quaternion().copy(leftHandPose.getRootRotation());
 
-    let rightPointerPos = new THREE.Vector3().copy(rightHandPose.getPointerPosition());
-    let rightWristRot = new THREE.Quaternion().copy(rightHandPose.getRootRotation());
+    let rightInteractorPos = new THREE.Vector3().copy(rightHandPose.getPointerPosition());
+    let rightInteractorRot = new THREE.Quaternion().copy(rightHandPose.getRootRotation());
 
-    let leftWristRight = new THREE.Vector3();
-    let leftWristUp = new THREE.Vector3();
-    let leftWristForward = new THREE.Vector3();
-    let leftWristRotationMatrix = new THREE.Matrix4();
-    leftWristRotationMatrix.makeRotationFromQuaternion(leftWristRot);
-    leftWristRotationMatrix.extractBasis(leftWristRight, leftWristUp, leftWristForward);
+    let leftInteractorRight = new THREE.Vector3();
+    let leftInteractorUp = new THREE.Vector3();
+    let leftInteractorForward = new THREE.Vector3();
+    let leftInteractorRotationMatrix = new THREE.Matrix4();
+    leftInteractorRotationMatrix.makeRotationFromQuaternion(leftInteractorRot);
+    leftInteractorRotationMatrix.extractBasis(leftInteractorRight, leftInteractorUp, leftInteractorForward);
 
-    let rightWristRight = new THREE.Vector3();
-    let rightWristUp = new THREE.Vector3();
-    let rightWristForward = new THREE.Vector3();
-    let rightWristRotationMatrix = new THREE.Matrix4();
-    rightWristRotationMatrix.makeRotationFromQuaternion(rightWristRot);
-    rightWristRotationMatrix.extractBasis(rightWristRight, rightWristUp, rightWristForward);
+    let rightInteractorRight = new THREE.Vector3();
+    let rightInteractorUp = new THREE.Vector3();
+    let rightInteractorForward = new THREE.Vector3();
+    let rightInteractorRotationMatrix = new THREE.Matrix4();
+    rightInteractorRotationMatrix.makeRotationFromQuaternion(rightInteractorRot);
+    rightInteractorRotationMatrix.extractBasis(rightInteractorRight, rightInteractorUp, rightInteractorForward);
+
+    // center
+    let planeCenter = new THREE.Vector3().lerpVectors(leftInteractorPos, rightInteractorPos, 0.5);
 
     // up
-    let leftPlaneNormal = leftWristRight.clone();
-    let rightPlaneNormal = rightWristRight.clone().negate();
+    let leftPlaneNormal = leftInteractorRight.clone();
+    let rightPlaneNormal = rightInteractorRight.clone().negate();
     let planeUp = new THREE.Vector3().lerpVectors(leftPlaneNormal, rightPlaneNormal, 0.5).normalize();
 
     // forward
-    let planeForward = new THREE.Vector3().lerpVectors(leftWristForward, rightWristForward, 0.5).normalize();
+    let planeForward = new THREE.Vector3().lerpVectors(leftInteractorForward, rightInteractorForward, 0.5).normalize();
     planeForward.projectOnPlane(planeUp).normalize();
 
     // right
@@ -135,7 +138,7 @@ export class BiManualMode extends Mode {
     let planeRotationMatrix = new THREE.Matrix4();
     planeRotationMatrix.makeBasis(planeRight, planeUp, planeForward);
 
-    let pos = new THREE.Vector3().lerpVectors(leftPointerPos, rightPointerPos, 0.5);
+    let pos = new THREE.Vector3().copy(planeCenter);
     let rot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
     let scl = new THREE.Vector3();
 

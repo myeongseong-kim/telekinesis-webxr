@@ -1,6 +1,5 @@
 import { Mode } from '../../mode.js';
-import { setWorldTransform } from '../manipulator.js';
-import { LockPose } from '../../poses/lock-pose.js';
+import { setWorldTransform, decomposeSwingTwist } from '../manipulator.js';
 
 export class BiRotateMode extends Mode {
   constructor(context) {
@@ -9,6 +8,16 @@ export class BiRotateMode extends Mode {
 
     this.pivotHandEntity = null;
     this.handleHandEntity = null;
+
+    this._currentPivotInteractorPos = null;
+    this._currentPivotInteractorRot = null;
+    this._previousPivotInteractorPos = null;
+    this._previousPivotInteractorRot = null;
+
+    this._currentHandleInteractorPos = null;
+    this._currentHandleInteractorRot = null;
+    this._previousHandleInteractorPos = null;
+    this._previousHandleInteractorRot = null;
   }
 
   enter() {
@@ -16,6 +25,7 @@ export class BiRotateMode extends Mode {
 
     this.context.sphereEntity.setAttribute('visible', 'true');
 
+    this.updateInteractors();
     this.initSphereTransform();
   }
 
@@ -30,6 +40,7 @@ export class BiRotateMode extends Mode {
     sphereObj.getWorldPosition(preIndicatorPos);
     sphereObj.getWorldQuaternion(preIndicatorRot);
 
+    this.updateInteractors();
     this.updateSphereTransform();
 
     let curIndicatorPos = new THREE.Vector3();
@@ -46,6 +57,9 @@ export class BiRotateMode extends Mode {
 
     let deltaPos = new THREE.Vector3(0, 0, 0);
     let deltaRot = new THREE.Quaternion().multiplyQuaternions(curIndicatorRot, preIndicatorRot.clone().invert());
+
+    deltaPos.multiplyScalar(this.context.sensitivity);
+    deltaRot.slerp(new THREE.Quaternion().identity(), 1.0 - this.context.sensitivity);
 
     let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);
     let newTargetRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetRot);
@@ -69,6 +83,16 @@ export class BiRotateMode extends Mode {
     sphereObj.updateMatrixWorld(true);
 
     this.handEntity = null;
+
+    this._currentPivotInteractorPos = null;
+    this._currentPivotInteractorRot = null;
+    this._previousPivotInteractorPos = null;
+    this._previousPivotInteractorRot = null;
+
+    this._currentHandleInteractorPos = null;
+    this._currentHandleInteractorRot = null;
+    this._previousHandleInteractorPos = null;
+    this._previousHandleInteractorRot = null;
   }
 
   handleGrabStart(handEntity) { }
@@ -79,9 +103,8 @@ export class BiRotateMode extends Mode {
 
   handlePinchEnd(handEntity) {
     const oppositeHandEntity = this.getOppositeHandEntity(handEntity);
-    const oppositeHandPose = oppositeHandEntity.components['hand-pose-controls'];
 
-    if (LockPose.isSelected(oppositeHandPose.currentPose)) {
+    if (this.context.isLocked(oppositeHandEntity)) {
       let modeTo = this.context.modeManager.modes['UniTranslate'];
       modeTo.handEntity = oppositeHandEntity;
 
@@ -118,9 +141,15 @@ export class BiRotateMode extends Mode {
 
   handleLockEnd(handEntity) {
     const oppositeHandEntity = this.getOppositeHandEntity(handEntity);
-    const oppositeHandPose = oppositeHandEntity.components['hand-pose-controls'];
 
-    if (!LockPose.isSelected(oppositeHandPose.currentPose)) {
+    if (this.context.isLocked(oppositeHandEntity)) {
+      let modeTo = this.context.modeManager.modes['BiRotate'];
+      modeTo.pivotHandEntity = oppositeHandEntity;
+      modeTo.handleHandEntity = handEntity;
+
+      this.context.modeManager.transitTo(modeTo);
+    }
+    else {
       let modeTo = this.context.modeManager.modes['BiManipulate'];
 
       let handedness = handEntity.components['hand-tracking-controls'].data.hand;
@@ -138,41 +167,29 @@ export class BiRotateMode extends Mode {
 
       this.context.modeManager.transitTo(modeTo);
     }
-    else {
-      let modeTo = this.context.modeManager.modes['BiRotate'];
-      modeTo.pivotHandEntity = this.getOppositeHandEntity(handEntity);
-      modeTo.handleHandEntity = handEntity;
-
-      this.context.modeManager.transitTo(modeTo);
-    }
   }
 
   initSphereTransform() {
-    const pivotHandPose = this.pivotHandEntity.components['hand-pose-controls'];
-    const handleHandPose = this.handleHandEntity.components['hand-pose-controls'];
+    let pivotInteractorRight = new THREE.Vector3();
+    let pivotInteractorUp = new THREE.Vector3();
+    let pivotInteractorForward = new THREE.Vector3();
+    let pivotInteractorRotationMatrix = new THREE.Matrix4();
+    pivotInteractorRotationMatrix.makeRotationFromQuaternion(this._currentPivotInteractorRot);
+    pivotInteractorRotationMatrix.extractBasis(pivotInteractorRight, pivotInteractorUp, pivotInteractorForward);
 
-    let pivotPointerPos = new THREE.Vector3().copy(pivotHandPose.getPointerPosition());
-    let pivotWristRot = new THREE.Quaternion().copy(pivotHandPose.getRootRotation());
+    let handleInteractorRight = new THREE.Vector3();
+    let handleInteractorUp = new THREE.Vector3();
+    let handleInteractorForward = new THREE.Vector3();
+    let handleInteractorRotationMatrix = new THREE.Matrix4();
+    handleInteractorRotationMatrix.makeRotationFromQuaternion(this._currentHandleInteractorRot);
+    handleInteractorRotationMatrix.extractBasis(handleInteractorRight, handleInteractorUp, handleInteractorForward);
 
-    let handlePointerPos = new THREE.Vector3().copy(handleHandPose.getPointerPosition());
-    let handleWristRot = new THREE.Quaternion().copy(handleHandPose.getRootRotation());
-
-    let pivotWristRight = new THREE.Vector3();
-    let pivotWristUp = new THREE.Vector3();
-    let pivotWristForward = new THREE.Vector3();
-    let pivotWristRotationMatrix = new THREE.Matrix4();
-    pivotWristRotationMatrix.makeRotationFromQuaternion(pivotWristRot);
-    pivotWristRotationMatrix.extractBasis(pivotWristRight, pivotWristUp, pivotWristForward);
-
-    let handleWristRight = new THREE.Vector3();
-    let handleWristUp = new THREE.Vector3();
-    let handleWristForward = new THREE.Vector3();
-    let handleWristRotationMatrix = new THREE.Matrix4();
-    handleWristRotationMatrix.makeRotationFromQuaternion(handleWristRot);
-    handleWristRotationMatrix.extractBasis(handleWristRight, handleWristUp, handleWristForward);
+    // center
+    let sphereCenter = this._currentPivotInteractorPos.clone();
 
     // right
-    let sphereRight = new THREE.Vector3().subVectors(handlePointerPos, pivotPointerPos).normalize();
+    let sphereRight = new THREE.Vector3().subVectors(
+      this._currentHandleInteractorPos, this._currentPivotInteractorPos).normalize();
 
     // up
     let sphereUp = new THREE.Vector3(0, 1, 0);
@@ -185,7 +202,7 @@ export class BiRotateMode extends Mode {
     sphereRotationMatrix.makeBasis(sphereRight, sphereUp, sphereForward);
 
     const sphereObj = this.context.sphereEntity.object3D;
-    let pos = new THREE.Vector3().copy(pivotPointerPos);
+    let pos = new THREE.Vector3().copy(sphereCenter);
     let rot = new THREE.Quaternion().setFromRotationMatrix(sphereRotationMatrix);
     let scl = sphereObj.getWorldScale(new THREE.Vector3());
 
@@ -198,31 +215,26 @@ export class BiRotateMode extends Mode {
   }
 
   updateSphereTransform() {
-    const pivotHandPose = this.pivotHandEntity.components['hand-pose-controls'];
-    const handleHandPose = this.handleHandEntity.components['hand-pose-controls'];
+    let pivotInteractorRight = new THREE.Vector3();
+    let pivotInteractorUp = new THREE.Vector3();
+    let pivotInteractorForward = new THREE.Vector3();
+    let pivotInteractorRotationMatrix = new THREE.Matrix4();
+    pivotInteractorRotationMatrix.makeRotationFromQuaternion(this._currentPivotInteractorRot);
+    pivotInteractorRotationMatrix.extractBasis(pivotInteractorRight, pivotInteractorUp, pivotInteractorForward);
 
-    let pivotPointerPos = new THREE.Vector3().copy(pivotHandPose.getPointerPosition());
-    let pivotWristRot = new THREE.Quaternion().copy(pivotHandPose.getRootRotation());
+    let handleInteractorRight = new THREE.Vector3();
+    let handleInteractorUp = new THREE.Vector3();
+    let handleInteractorForward = new THREE.Vector3();
+    let handleInteractorRotationMatrix = new THREE.Matrix4();
+    handleInteractorRotationMatrix.makeRotationFromQuaternion(this._currentHandleInteractorRot);
+    handleInteractorRotationMatrix.extractBasis(handleInteractorRight, handleInteractorUp, handleInteractorForward);
 
-    let handlePointerPos = new THREE.Vector3().copy(handleHandPose.getPointerPosition());
-    let handleWristRot = new THREE.Quaternion().copy(handleHandPose.getRootRotation());
+    // center
+    let sphereCenter = this._currentPivotInteractorPos.clone();
 
-    let pivotWristRight = new THREE.Vector3();
-    let pivotWristUp = new THREE.Vector3();
-    let pivotWristForward = new THREE.Vector3();
-    let pivotWristRotationMatrix = new THREE.Matrix4();
-    pivotWristRotationMatrix.makeRotationFromQuaternion(pivotWristRot);
-    pivotWristRotationMatrix.extractBasis(pivotWristRight, pivotWristUp, pivotWristForward);
-
-    let handleWristRight = new THREE.Vector3();
-    let handleWristUp = new THREE.Vector3();
-    let handleWristForward = new THREE.Vector3();
-    let handleWristRotationMatrix = new THREE.Matrix4();
-    handleWristRotationMatrix.makeRotationFromQuaternion(handleWristRot);
-    handleWristRotationMatrix.extractBasis(handleWristRight, handleWristUp, handleWristForward);
-
-    // right
-    let sphereRight = new THREE.Vector3().subVectors(handlePointerPos, pivotPointerPos).normalize();
+    // bar
+    let sphereBar = new THREE.Vector3().subVectors(
+      this._currentHandleInteractorPos, this._currentPivotInteractorPos).normalize();
 
     const sphereObj = this.context.sphereEntity.object3D;
     let sphereObjPos = new THREE.Vector3();
@@ -232,14 +244,28 @@ export class BiRotateMode extends Mode {
     sphereObj.getWorldQuaternion(sphereObjRot);
     sphereObj.getWorldScale(sphereObjScl);
 
+    let spherical = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3().setFromMatrixColumn(sphereObj.matrixWorld, 0),
+      sphereBar
+    );
+
+    let deltaRotHandle = new THREE.Quaternion().multiplyQuaternions(
+      this._currentHandleInteractorRot,
+      this._previousHandleInteractorRot.clone().invert()
+    )
+    let swing = new THREE.Quaternion();
+    let twist = new THREE.Quaternion();
+    decomposeSwingTwist(deltaRotHandle, sphereBar, swing, twist);
+
     let deltaPos = new THREE.Vector3().subVectors(
-      pivotPointerPos,
+      sphereCenter,
       sphereObjPos
     );
-    let deltaRot = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3().setFromMatrixColumn(sphereObj.matrixWorld, 0),
-      sphereRight
+    let deltaRot = new THREE.Quaternion().multiplyQuaternions(
+      twist,
+      spherical
     );
+
 
     let pos = new THREE.Vector3().addVectors(sphereObjPos, deltaPos);
     let rot = new THREE.Quaternion().multiplyQuaternions(deltaRot, sphereObjRot);
@@ -251,6 +277,25 @@ export class BiRotateMode extends Mode {
       rot,
       scl
     );
+  }
+
+  updateInteractors() {
+    const pivotHandPose = this.pivotHandEntity.components['hand-pose-controls'];
+    const handleHandPose = this.handleHandEntity.components['hand-pose-controls'];
+
+    if (this._currentPivotInteractorPos != null && this._currentPivotInteractorRot != null) {
+      this._previousPivotInteractorPos = this._currentPivotInteractorPos.clone();
+      this._previousPivotInteractorRot = this._currentPivotInteractorRot.clone();
+    }
+    if (this._currentHandleInteractorPos != null && this._currentHandleInteractorRot != null) {
+      this._previousHandleInteractorPos = this._currentHandleInteractorPos.clone();
+      this._previousHandleInteractorRot = this._currentHandleInteractorRot.clone();
+    }
+
+    this._currentPivotInteractorPos = new THREE.Vector3().copy(pivotHandPose.getPointerPosition());
+    this._currentPivotInteractorRot = new THREE.Quaternion().copy(pivotHandPose.getRootRotation());
+    this._currentHandleInteractorPos = new THREE.Vector3().copy(handleHandPose.getPointerPosition());
+    this._currentHandleInteractorRot = new THREE.Quaternion().copy(handleHandPose.getRootRotation());
   }
 
   getOppositeHandEntity(handEntity) {

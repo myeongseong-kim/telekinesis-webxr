@@ -11,8 +11,11 @@ AFRAME.registerComponent('hand-pose-controls', {
     this.handTracking = this.handEntity.components['hand-tracking-controls'];
     this.handedness = this.handTracking.data.hand;
     this.handPose = new HandPose(this.handEntity);
-    this.currentPose = this.handPose.snapshot();
+
+    this.currentPose = null;
     this.previousPose = null;
+    this.currentTransform = null;
+    this.previousTransform = null;
 
     this.featureTextEntities = {};
 
@@ -26,8 +29,12 @@ AFRAME.registerComponent('hand-pose-controls', {
   tick: function (time, deltaTime) {
     if (this.handTracking && this.handTracking.bones) {
       this.previousPose = this.currentPose;
+      this.previousTransform = this.currentTransform;
+
       this.handPose.update();
+
       this.currentPose = this.handPose.snapshot();
+      this.currentTransform = this.handTracking.getBone(HAND_BONES.wrist).matrixWorld.clone();
 
       if (this.data.debug) {
         this._updateDebugText();

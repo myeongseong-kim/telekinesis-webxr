@@ -72,8 +72,8 @@ export class UniManualMode extends Mode {
   handleGrabStart(handEntity) {
     let modeTo = this.context.modeManager.modes['BiManual'];
 
-    const exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
-    const newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
+    let exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
+    let newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
 
     if (exHandedness == 'left' && newHandedness == 'right') {
       modeTo.leftHandEntity = this.handEntity;
@@ -104,28 +104,30 @@ export class UniManualMode extends Mode {
 
   updatePlaneTransform() {
     const handPose = this.handEntity.components['hand-pose-controls'];
-    const handedness = handPose.handedness;
+    let interactorPos = new THREE.Vector3().copy(handPose.getPointerPosition());
+    let interactorRot = new THREE.Quaternion().copy(handPose.getRootRotation());
 
-    let pointerPos = new THREE.Vector3().copy(handPose.getPointerPosition());
-    let wristRot = new THREE.Quaternion().copy(handPose.getRootRotation());
+    let interactorUp = new THREE.Vector3();
+    let interactorRight = new THREE.Vector3();
+    let interactorForward = new THREE.Vector3();
+    let interactorRotationMatrix = new THREE.Matrix4();
+    interactorRotationMatrix.makeRotationFromQuaternion(interactorRot);
+    interactorRotationMatrix.extractBasis(interactorRight, interactorUp, interactorForward);
 
-    let wristUp = new THREE.Vector3();
-    let wristRight = new THREE.Vector3();
-    let wristForward = new THREE.Vector3();
-    let wristRotationMatrix = new THREE.Matrix4();
-    wristRotationMatrix.makeRotationFromQuaternion(wristRot);
-    wristRotationMatrix.extractBasis(wristRight, wristUp, wristForward);
+    // center
+    let planeCenter = interactorPos.clone();
 
     // up
     let planeUp;
+    let handedness = this.handEntity.components['hand-tracking-controls'].data.hand;
     if (handedness == 'left') {
-      planeUp = wristRight.clone();
+      planeUp = interactorRight.clone();
     } else {
-      planeUp = wristRight.clone().negate();
+      planeUp = interactorRight.clone().negate();
     }
 
     // forward
-    let planeForward = wristForward.clone();
+    let planeForward = interactorForward.clone();
 
     // right
     let planeRight = new THREE.Vector3().crossVectors(planeUp, planeForward);
@@ -133,7 +135,7 @@ export class UniManualMode extends Mode {
     let planeRotationMatrix = new THREE.Matrix4();
     planeRotationMatrix.makeBasis(planeRight, planeUp, planeForward);
 
-    let pos = new THREE.Vector3().copy(pointerPos);
+    let pos = new THREE.Vector3().copy(planeCenter);
     let rot = new THREE.Quaternion().setFromRotationMatrix(planeRotationMatrix);
     let scl = new THREE.Vector3();
 

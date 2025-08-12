@@ -1,6 +1,5 @@
 import { Mode } from '../../mode.js';
 import { setWorldTransform } from '../manipulator.js';
-import { LockPose } from '../../poses/lock-pose.js';
 
 export class UniTranslateMode extends Mode {
   constructor(context) {
@@ -8,6 +7,11 @@ export class UniTranslateMode extends Mode {
     this.name = 'UniTranslate';
 
     this.handEntity = null;
+
+    this._currentInteractorPos = null;
+    this._currentInteractorRot = null;
+    this._previousInteractorPos = null;
+    this._previousInteractorRot = null;
   }
 
   enter() {
@@ -15,6 +19,7 @@ export class UniTranslateMode extends Mode {
 
     this.context.sphereEntity.setAttribute('visible', 'true');
 
+    this.updateInteractors();
     this.initSphereTransform();
   }
 
@@ -29,6 +34,7 @@ export class UniTranslateMode extends Mode {
     sphereObj.getWorldPosition(preIndicatorPos);
     sphereObj.getWorldQuaternion(preIndicatorRot);
 
+    this.updateInteractors();
     this.updateSphereTransform();
 
     let curIndicatorPos = new THREE.Vector3();
@@ -45,6 +51,9 @@ export class UniTranslateMode extends Mode {
 
     let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
     let deltaRot = new THREE.Quaternion().identity();
+
+    deltaPos.multiplyScalar(this.context.sensitivity);
+    deltaRot.slerp(new THREE.Quaternion().identity(), 1.0 - this.context.sensitivity);
 
     let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);
     let newTargetRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetRot);
@@ -68,6 +77,11 @@ export class UniTranslateMode extends Mode {
     sphereObj.updateMatrixWorld(true);
 
     this.handEntity = null;
+
+    this._currentInteractorPos = null;
+    this._currentInteractorRot = null;
+    this._previousInteractorPos = null;
+    this._previousInteractorRot = null;
   }
 
   handleGrabStart(handEntity) { }
@@ -77,12 +91,12 @@ export class UniTranslateMode extends Mode {
   handlePinchStart(handEntity) {
     const handPose = handEntity.components['hand-pose-controls'];
 
-    if (LockPose.isSelected(handPose.currentPose)) {
+    if (this.context.isLocked(handEntity)) {
       let modeTo = this.context.modeManager.modes['BiTranslate'];
-  
-      const exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
-      const newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
-  
+
+      let exHandedness = this.handEntity.components['hand-tracking-controls'].data.hand;
+      let newHandedness = handEntity.components['hand-tracking-controls'].data.hand;
+
       if (exHandedness == 'left' && newHandedness == 'right') {
         modeTo.leftHandEntity = this.handEntity;
         modeTo.rightHandEntity = handEntity;
@@ -92,7 +106,7 @@ export class UniTranslateMode extends Mode {
       } else {
         console.error('Hand Tracking Goes Wrong...');
       }
-  
+
       this.context.modeManager.transitTo(modeTo);
     }
     else {
@@ -122,29 +136,27 @@ export class UniTranslateMode extends Mode {
   }
 
   initSphereTransform() {
-    const handPose = this.handEntity.components['hand-pose-controls'];
-    const handedness = handPose.handedness;
+    let interactorUp = new THREE.Vector3();
+    let interactorRight = new THREE.Vector3();
+    let interactorForward = new THREE.Vector3();
+    let interactorRotationMatrix = new THREE.Matrix4();
+    interactorRotationMatrix.makeRotationFromQuaternion(this._currentInteractorRot);
+    interactorRotationMatrix.extractBasis(interactorRight, interactorUp, interactorForward);
 
-    let pointerPos = new THREE.Vector3().copy(handPose.getPointerPosition());
-    let wristRot = new THREE.Quaternion().copy(handPose.getRootRotation());
+    // center
+    let sphereCenter = this._currentInteractorPos.clone();
 
-    let wristUp = new THREE.Vector3();
-    let wristRight = new THREE.Vector3();
-    let wristForward = new THREE.Vector3();
-    let wristRotationMatrix = new THREE.Matrix4();
-    wristRotationMatrix.makeRotationFromQuaternion(wristRot);
-    wristRotationMatrix.extractBasis(wristRight, wristUp, wristForward);
+    // forward
+    let sphereForward = interactorForward.clone();
 
     // up
     let sphereUp;
+    let handedness = this.handEntity.components['hand-tracking-controls'].data.hand;
     if (handedness == 'left') {
-      sphereUp = wristRight.clone();
+      sphereUp = interactorRight.clone();
     } else {
-      sphereUp = wristRight.clone().negate();
+      sphereUp = interactorRight.clone().negate();
     }
-
-    // forward
-    let sphereForward = wristForward.clone();
 
     // right
     let sphereRight = new THREE.Vector3().crossVectors(sphereUp, sphereForward).normalize();
@@ -153,7 +165,7 @@ export class UniTranslateMode extends Mode {
     sphereRotationMatrix.makeBasis(sphereRight, sphereUp, sphereForward);
 
     const sphereObj = this.context.sphereEntity.object3D;
-    let pos = pointerPos.clone();
+    let pos = new THREE.Vector3().copy(sphereCenter);
     let rot = new THREE.Quaternion().setFromRotationMatrix(sphereRotationMatrix);
     let scl = sphereObj.getWorldScale(new THREE.Vector3());
 
@@ -166,18 +178,15 @@ export class UniTranslateMode extends Mode {
   }
 
   updateSphereTransform() {
-    const handPose = this.handEntity.components['hand-pose-controls'];
-    const handedness = handPose.handedness;
+    let interactorUp = new THREE.Vector3();
+    let interactorRight = new THREE.Vector3();
+    let interactorForward = new THREE.Vector3();
+    let interactorRotationMatrix = new THREE.Matrix4();
+    interactorRotationMatrix.makeRotationFromQuaternion(this._currentInteractorRot);
+    interactorRotationMatrix.extractBasis(interactorRight, interactorUp, interactorForward);
 
-    let pointerPos = new THREE.Vector3().copy(handPose.getPointerPosition());
-    let wristRot = new THREE.Quaternion().copy(handPose.getRootRotation());
-
-    let wristUp = new THREE.Vector3();
-    let wristRight = new THREE.Vector3();
-    let wristForward = new THREE.Vector3();
-    let wristRotationMatrix = new THREE.Matrix4();
-    wristRotationMatrix.makeRotationFromQuaternion(wristRot);
-    wristRotationMatrix.extractBasis(wristRight, wristUp, wristForward);
+    // center
+    let sphereCenter = this._currentInteractorPos.clone();
 
     const sphereObj = this.context.sphereEntity.object3D;
     let sphereObjPos = new THREE.Vector3();
@@ -188,7 +197,7 @@ export class UniTranslateMode extends Mode {
     sphereObj.getWorldScale(sphereObjScl);
 
     let deltaPos = new THREE.Vector3().subVectors(
-      pointerPos,
+      sphereCenter,
       sphereObjPos
     );
     let deltaRot = new THREE.Quaternion().identity();
@@ -203,5 +212,17 @@ export class UniTranslateMode extends Mode {
       rot,
       scl
     );
+  }
+
+  updateInteractors() {
+    const handPose = this.handEntity.components['hand-pose-controls'];
+
+    if (this._currentInteractorPos != null && this._currentInteractorRot != null) {
+      this._previousInteractorPos = this._currentInteractorPos.clone();
+      this._previousInteractorRot = this._currentInteractorRot.clone();
+    }
+
+    this._currentInteractorPos = new THREE.Vector3().copy(handPose.getPointerPosition());
+    this._currentInteractorRot = new THREE.Quaternion().copy(handPose.getRootRotation());
   }
 }

@@ -1,10 +1,10 @@
 import { Mode } from '../../mode.js';
-import { setWorldTransform, decomposeSwingTwist } from '../manipulator.js';
+import { setWorldTransform } from '../manipulator.js';
 
-export class BiManipulateMode extends Mode {
+export class ScaleMode extends Mode {
   constructor(context) {
     super(context);
-    this.name = 'BiManipulate';
+    this.name = 'Scale';
 
     this.leftHandEntity = null;
     this.rightHandEntity = null;
@@ -18,6 +18,14 @@ export class BiManipulateMode extends Mode {
     this._currentRightInteractorRot = null;
     this._previousRightInteractorPos = null;
     this._previousRightInteractorRot = null;
+
+    this._scale = 1.0;
+    this.UNIT = 0.1;
+    this.MAX_SCALE = 1.0;
+    this.MIN_SCALE = 0.1;
+
+    this._initialLenght = 0;
+    this._currentLenght = 0;
   }
 
   enter() {
@@ -27,50 +35,27 @@ export class BiManipulateMode extends Mode {
 
     this.updateInteractors();
     this.initSphereTransform();
+
+    this._scale = this.context.sensitivity;
+    this._initialLenght = this.getDistanceBetweenHands();
   }
 
   execute() {
     super.execute();
 
-    const sphereObj = this.context.sphereEntity.object3D;
-    const targetObj = this.context.targetEntity.object3D;
-
-    let preIndicatorPos = new THREE.Vector3();
-    let preIndicatorRot = new THREE.Quaternion();
-    sphereObj.getWorldPosition(preIndicatorPos);
-    sphereObj.getWorldQuaternion(preIndicatorRot);
-
     this.updateInteractors();
     this.updateSphereTransform();
 
-    let curIndicatorPos = new THREE.Vector3();
-    let curIndicatorRot = new THREE.Quaternion();
-    sphereObj.getWorldPosition(curIndicatorPos);
-    sphereObj.getWorldQuaternion(curIndicatorRot);
+    this._currentLenght = this.getDistanceBetweenHands();
+    let value = this._currentLenght / this._initialLenght;
 
-    let targetPos = new THREE.Vector3();
-    let targetRot = new THREE.Quaternion();
-    let targetScl = new THREE.Vector3();
-    targetObj.getWorldPosition(targetPos);
-    targetObj.getWorldQuaternion(targetRot);
-    targetObj.getWorldScale(targetScl);
-
-    let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
-    let deltaRot = new THREE.Quaternion().multiplyQuaternions(curIndicatorRot, preIndicatorRot.clone().invert());
-
-    deltaPos.multiplyScalar(this.context.sensitivity);
-    deltaRot.slerp(new THREE.Quaternion().identity(), 1.0 - this.context.sensitivity);
-
-    let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);
-    let newTargetRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetRot);
-    let newTargetScl = new THREE.Vector3().copy(targetScl);
-
-    setWorldTransform(
-      targetObj,
-      newTargetPos,
-      newTargetRot,
-      newTargetScl
-    );
+    this.context.sensitivity = Math.round(value * this._scale / this.UNIT) * this.UNIT;
+    if (this.context.sensitivity < this.MIN_SCALE) {
+      this.context.sensitivity = this.MIN_SCALE;
+    }
+    else if (this.context.sensitivity > this.MAX_SCALE) {
+      this.context.sensitivity = this.MAX_SCALE;
+    }
   }
 
   exit() {
@@ -85,27 +70,23 @@ export class BiManipulateMode extends Mode {
     this.leftHandEntity = null;
     this.rightHandEntity = null;
 
-    this._currentLeftInteractorPos = null;
-    this._currentLeftInteractorRot = null;
-    this._previousLeftInteractorPos = null;
-    this._previousLeftInteractorRot = null;
+    this._currentPivotInteractorPos = null;
+    this._currentPivotInteractorRot = null;
+    this._previousPivotInteractorPos = null;
+    this._previousPivotInteractorRot = null;
 
-    this._currentRightInteractorPos = null;
-    this._currentRightInteractorRot = null;
-    this._previousRightInteractorPos = null;
-    this._previousRightInteractorRot = null;
+    this._currentHandleInteractorPos = null;
+    this._currentHandleInteractorRot = null;
+    this._previousHandleInteractorPos = null;
+    this._previousHandleInteractorRot = null;
   }
 
   handleGrabStart(handEntity) { }
 
-  handleGrabEnd(handEntity) { }
+  handleGrabEnd(handEntity) {
+    let modeTo = this.context.modeManager.modes['Ready'];
 
-  handlePinchStart(handEntity) { }
-
-  handlePinchEnd(handEntity) {
-    let modeTo = this.context.modeManager.modes['UniManipulate'];
-
-    let handedness = handEntity.components['hand-tracking-controls'].data.hand;
+    const handedness = handEntity.components['hand-tracking-controls'].data.hand;
     if (handedness == 'left') {
       modeTo.handEntity = this.rightHandEntity;
     } else if (handedness == 'right') {
@@ -117,13 +98,11 @@ export class BiManipulateMode extends Mode {
     this.context.modeManager.transitTo(modeTo);
   }
 
-  handleLockStart(handEntity) {
-    let modeTo = this.context.modeManager.modes['BiRotate'];
-    modeTo.pivotHandEntity = handEntity;
-    modeTo.handleHandEntity = this.getOppositeHandEntity(handEntity);
+  handlePinchStart(handEntity) { }
 
-    this.context.modeManager.transitTo(modeTo);
-  }
+  handlePinchEnd(handEntity) { }
+
+  handleLockStart(handEntity) { }
 
   handleLockEnd(handEntity) { }
 
@@ -202,37 +181,11 @@ export class BiManipulateMode extends Mode {
     sphereObj.getWorldQuaternion(sphereObjRot);
     sphereObj.getWorldScale(sphereObjScl);
 
-    let spherical = new THREE.Quaternion().setFromUnitVectors(
-      new THREE.Vector3().setFromMatrixColumn(sphereObj.matrixWorld, 0),
-      sphereBar
-    );
-
-    let deltaRotLeft = new THREE.Quaternion().multiplyQuaternions(
-      this._currentLeftInteractorRot,
-      this._previousLeftInteractorRot.clone().invert()
-    )
-    let swingLeft = new THREE.Quaternion();
-    let twistLeft = new THREE.Quaternion();
-    decomposeSwingTwist(deltaRotLeft, sphereBar, swingLeft, twistLeft);
-
-    let deltaRotRight = new THREE.Quaternion().multiplyQuaternions(
-      this._currentRightInteractorRot,
-      this._previousRightInteractorRot.clone().invert()
-    )
-    let swingRight = new THREE.Quaternion();
-    let twistRight = new THREE.Quaternion();
-    decomposeSwingTwist(deltaRotRight, sphereBar, swingRight, twistRight);
-
-    let twist = new THREE.Quaternion().slerpQuaternions(twistLeft, twistRight, 0.5);
-
     let deltaPos = new THREE.Vector3().subVectors(
       sphereCenter,
       sphereObjPos
     );
-    let deltaRot = new THREE.Quaternion().multiplyQuaternions(
-      twist,
-      spherical
-    );
+    let deltaRot = new THREE.Quaternion().identity();
 
     let pos = new THREE.Vector3().addVectors(sphereObjPos, deltaPos);
     let rot = new THREE.Quaternion().multiplyQuaternions(deltaRot, sphereObjRot);
@@ -265,11 +218,10 @@ export class BiManipulateMode extends Mode {
     this._currentRightInteractorRot = new THREE.Quaternion().copy(rightHandPose.getRootRotation());
   }
 
-  getOppositeHandEntity(handEntity) {
-    if (handEntity == this.leftHandEntity) {
-      return this.rightHandEntity;
-    } else {
-      return this.leftHandEntity;
+  getDistanceBetweenHands() {
+    if (this._currentLeftInteractorPos && this._currentRightInteractorPos) {
+      return this._currentLeftInteractorPos.distanceTo(this._currentRightInteractorPos);
     }
+    return 0;
   }
 }
