@@ -52,6 +52,9 @@ export class UniTranslateMode extends Mode {
     let deltaPos = new THREE.Vector3().subVectors(curIndicatorPos, preIndicatorPos);
     let deltaRot = new THREE.Quaternion().identity();
 
+    deltaPos.multiplyScalar(this.context.sensitivity);
+    deltaRot.slerp(new THREE.Quaternion().identity(), 1.0 - this.context.sensitivity);
+
     let newTargetPos = new THREE.Vector3().addVectors(targetPos, deltaPos);
     let newTargetRot = new THREE.Quaternion().multiplyQuaternions(deltaRot, targetRot);
     let newTargetScl = new THREE.Vector3().copy(targetScl);

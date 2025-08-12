@@ -47,6 +47,20 @@ AFRAME.registerComponent('manipulator', {
     this.planeEntity = this.data.plane;
     this.sphereEntity = this.data.sphere;
 
+    this.sensitivity = 1.0;
+    this.scaleTextEntity = document.createElement('a-entity');
+    this.scaleTextEntity.setAttribute('text', {
+      value: 'N/A',
+      color: '#ffffff',
+      align: 'center',
+      width: 0.5,
+      wrapCount: 20,
+      shader: 'msdf',
+      negate: true,
+    });
+    this.scaleTextEntity.setAttribute('visible', 'true');
+    this.el.appendChild(this.scaleTextEntity);
+
     this.MAX_DIST = 1.0;  // 1m
     this.MAX_SPEED = 1.0; // 1m per second
     this.MAX_ANGULARSPEED = Math.PI / 2; // 90degree per second
@@ -55,6 +69,12 @@ AFRAME.registerComponent('manipulator', {
   tick: function (time, deltaTime) {
     let cameraPos = new THREE.Vector3();
     this.el.sceneEl.camera.getWorldPosition(cameraPos);
+
+    let displaySensitivity = this.sensitivity.toFixed(1);
+    this.scaleTextEntity.setAttribute('text', { value: `${displaySensitivity}` });
+    this.scaleTextEntity.object3D.position.copy(this.sphereEntity.object3D.position);
+    this.scaleTextEntity.object3D.lookAt(cameraPos);
+    this.scaleTextEntity.object3D.translateZ(0.05);
 
     if (this.leftHandPose) {
       if (!this.leftHandPose.currentTransform || !this.leftHandPose.previousTransform) return;
