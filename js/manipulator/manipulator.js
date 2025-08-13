@@ -239,26 +239,20 @@ AFRAME.registerComponent('manipulator', {
 
 });
 
-export function setWorldTransform(entity, pos, rot, scl) {
+export function setWorldTransform(object, pos, rot, scl) {
   let transform = new THREE.Matrix4().compose(pos, rot, scl);
 
   let inverseParentTransform = new THREE.Matrix4().identity();
-  if (entity.parent) {
-    entity.parent.updateMatrixWorld(true);
-    inverseParentTransform.copy(entity.parent.matrixWorld).invert();
+  if (object.parent) {
+    object.parent.updateMatrixWorld(true);
+    inverseParentTransform.copy(object.parent.matrixWorld).invert();
   }
-  
+
   let localTransform = transform.premultiply(inverseParentTransform);
 
-  let localPos = new THREE.Vector3();
-  let localRot = new THREE.Quaternion();
-  let localScl = new THREE.Vector3();
-  localTransform.decompose(localPos, localRot, localScl);
-
-  entity.position.copy(localPos);
-  entity.quaternion.copy(localRot);
-  entity.scale.copy(localScl);
-  entity.updateMatrixWorld(true);
+  object.matrix.copy(localTransform);
+  object.matrix.decompose(object.position, object.quaternion, object.scale);
+  object.updateMatrixWorld(true);
 }
 
 export function decomposeSwingTwist(q, axis, swing, twist) {
